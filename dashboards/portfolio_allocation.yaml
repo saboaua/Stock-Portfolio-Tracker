@@ -1,0 +1,104 @@
+# Requires from HACS (Frontend): button-card, vertical-stack-in-card,
+# mushroom, card_mod - all already used elsewhere in this dashboard set,
+# so there's nothing new to install.
+#
+# Draws a CSS conic-gradient donut of every sensor.*_position_value entity
+# (auto-discovered via `states`, same trick as portfolio_overview_dynamic.yaml),
+# with a scrollable colour-coded legend below - matching the reference
+# "Portfolio Allocation" screenshot. Adding/removing a stock via Configure
+# updates this automatically; no YAML edits.
+
+type: custom:vertical-stack-in-card
+card_mod:
+  style: |
+    ha-card {
+      background: var(--ha-card-background, var(--card-background-color, #ffffff));
+      border-radius: var(--ha-card-border-radius, 12px);
+      padding: 18px 16px 24px 16px;
+      box-shadow: var(--ha-card-box-shadow, 0 2px 6px rgba(0, 0, 0, 0.1));
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
+    }
+cards:
+  - type: custom:mushroom-title-card
+    title: Portfolio Allocation
+    card_mod:
+      style: |
+        ha-card { padding: 4px; }
+        .title { font-size: 20px !important; font-weight: 800 !important; }
+
+  - type: custom:button-card
+    entity: sensor.portfolio_total_value
+    triggers_update: all
+    show_name: false
+    show_icon: false
+    show_state: false
+    show_label: true
+    tap_action:
+      action: none
+    styles:
+      card:
+        - background: transparent
+        - box-shadow: none
+        - border: none
+        - padding: 8px 4px
+    label: |
+      [[[
+        const palette = ['#f59e0b','#3b82f6','#ef4444','#a855f7','#eab308','#10b981','#ec4899','#06b6d4','#84cc16','#f97316'];
+
+        const holdings = [];
+        for (const entityId in states) {
+          if (!entityId.startsWith('sensor.') || !entityId.endsWith('_position_value')) continue;
+          const st = states[entityId];
+          const val = parseFloat(st.state);
+          if (isNaN(val) || val <= 0) continue;
+          const symbol = st.attributes?.symbol
+            || entityId.replace('sensor.', '').replace(/_position_value$/, '').toUpperCase();
+          holdings.push({ symbol, val });
+        }
+        holdings.sort((a, b) => b.val - a.val);
+
+        const total = holdings.reduce((sum, h) => sum + h.val, 0) || 1;
+
+        let cursor = 0;
+        const stops = [];
+        holdings.forEach((h, i) => {
+          const pct = (h.val / total) * 100;
+          h.color = palette[i % palette.length];
+          stops.push(`${h.color} ${cursor.toFixed(3)}% ${(cursor + pct).toFixed(3)}%`);
+          cursor += pct;
+        });
+        const gradient = stops.length
+          ? stops.join(', ')
+          : 'var(--divider-color, #e2e8f0) 0% 100%';
+
+        const legend = holdings.map(h => `
+          <div style="display:flex; align-items:center; gap:8px; padding:5px 2px; width:100%; box-sizing:border-box;">
+            <span style="width:10px; height:10px; border-radius:50%; background:${h.color}; flex-shrink:0;"></span>
+            <span style="font-size:13px; font-weight:700; color:var(--primary-text-color, #0f172a); white-space:nowrap;">${h.symbol}:</span>
+            <span style="font-size:13px; color:var(--secondary-text-color, #475569); margin-left:auto; white-space:nowrap;">
+              ${h.val.toLocaleString('en-US', {minimumFractionDigits: 1, maximumFractionDigits: 1})} USD
+            </span>
+          </div>
+        `).join('');
+
+        return `
+          <div style="display:flex; flex-direction:column; align-items:center; width:100%;">
+            <div style="position:relative; width:170px; height:170px; border-radius:50%; background: conic-gradient(${gradient}); flex-shrink:0;">
+              <div style="position:absolute; top:16px; left:16px; right:16px; bottom:16px; border-radius:50%; background: var(--ha-card-background, var(--card-background-color, #ffffff)); display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center;">
+                <div style="font-size:10px; font-weight:700; letter-spacing:0.6px; color:var(--secondary-text-color, #94a3b8); text-transform:uppercase; margin-bottom:2px;">
+                  Total Assets
+                </div>
+                <div style="font-size:22px; font-weight:800; color:var(--primary-text-color, #0f172a); line-height:1.1;">
+                  $${total.toLocaleString('en-US', {maximumFractionDigits: 0})}
+                </div>
+              </div>
+            </div>
+            <div style="width:100%; max-width:280px; max-height:180px; overflow-y:auto; margin-top:16px;">
+              ${legend || '<div style="text-align:center; font-size:12px; color:var(--secondary-text-color,#94a3b8);">No holdings yet</div>'}
+            </div>
+          </div>
+        `;
+      ]]]
+
+grid_options:
+  columns: full
