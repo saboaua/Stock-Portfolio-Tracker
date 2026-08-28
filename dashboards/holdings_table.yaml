@@ -1,0 +1,101 @@
+# No changes needed - the integration's sensor.portfolio_holdings_table
+# exposes a `rows` attribute with the exact same shape the old template
+# sensor produced, so this card works as-is against the new integration.
+type: custom:flex-table-card
+title: Holdings
+strict: true
+entities:
+  include: sensor.portfolio_holdings_table
+columns:
+  - name: Symbol
+    data: rows.symbol
+    modify: x ?? ''
+  - name: Status
+    data: rows.status
+    modify: x ?? ''
+  - name: Shares
+    data: rows.shares
+    align: right
+    modify: 'x == null || x === undefined ? '''' : x'
+  - name: Last Price
+    data: rows.last_price
+    align: right
+    modify: >
+      if (x == null || x === undefined || x === '') { '' } else { '$' +
+      parseFloat(x).toFixed(2) }
+  - name: AC/Share
+    data: rows.ac_share
+    align: right
+    modify: >
+      if (x == null || x === undefined || x === '') { '' } else { '$' +
+      parseFloat(x).toFixed(2) }
+  - name: Total Cost
+    data: rows.total_cost
+    align: right
+    modify: >
+      if (x == null || x === undefined || x === '') { '' } else { '$' +
+      parseFloat(x).toFixed(2) }
+  - name: Market Value
+    data: rows.market_value
+    align: right
+    modify: >
+      if (x == null || x === undefined || x === '') { '' } else { '$' +
+      parseFloat(x).toFixed(2) }
+  - name: Day Gain %
+    data: rows.day_gain_pct
+    align: right
+    modify: |
+      if (x == null || x === undefined || x === '') { '--' } else {
+        const v = parseFloat(x);
+        const color = v >= 0 ? 'var(--success-color, #4caf50)' : 'var(--error-color, #f44336)';
+        `<span style="color:${color}">${v.toFixed(2)}%</span>`
+      }
+  - name: Day Gain $
+    data: rows.day_gain_dollar
+    align: right
+    modify: |
+      if (x == null || x === undefined || x === '') { '--' } else {
+        const v = parseFloat(x);
+        const color = v >= 0 ? 'var(--success-color, #4caf50)' : 'var(--error-color, #f44336)';
+        const sign = v >= 0 ? '' : '-';
+        `<span style="color:${color}">${sign}$${Math.abs(v).toFixed(2)}</span>`
+      }
+  - name: Tot Gain %
+    data: rows.tot_gain_pct
+    align: right
+    modify: |
+      if (x == null || x === undefined || x === '') { '--' } else {
+        const v = parseFloat(x);
+        const color = v >= 0 ? 'var(--success-color, #4caf50)' : 'var(--error-color, #f44336)';
+        `<span style="color:${color}">${v.toFixed(2)}%</span>`
+      }
+  - name: Tot Gain $
+    data: rows.tot_gain_dollar
+    align: right
+    modify: |
+      if (x == null || x === undefined || x === '') { '--' } else {
+        const v = parseFloat(x);
+        const color = v >= 0 ? 'var(--success-color, #4caf50)' : 'var(--error-color, #f44336)';
+        const sign = v >= 0 ? '' : '-';
+        `<span style="color:${color}">${sign}$${Math.abs(v).toFixed(2)}</span>`
+      }
+  - name: Div Income
+    data: rows.symbol
+    modify: '''--'''
+  - name: Realized Gain
+    data: rows.symbol
+    modify: '''--'''
+css:
+  table+: >
+    width: calc(100% - 32px); margin: 0 16px; table-layout: auto;
+    border-collapse: collapse;
+  thead tr th: >
+    padding: 4px 6px; font-size: 10px; text-transform: uppercase; opacity: 0.65;
+    white-space: nowrap;
+  tbody tr td: |
+    padding: 5px 6px; font-size: 12px; white-space: nowrap;
+card_mod:
+  style: |
+    ha-card {
+      overflow-x: auto;
+    }

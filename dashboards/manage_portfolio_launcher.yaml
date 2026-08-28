@@ -1,0 +1,48 @@
+# Replaces the old "Portfolio Inputs" card, which edited
+# input_number.<symbol>_invested_capital / _shares and
+# input_datetime.<symbol>_entry_date directly. Those helpers are no
+# longer the source of truth - the integration keeps shares, invested
+# capital, and entry date per holding internally, edited only through
+# Configure (or the buy_shares / sell_shares services).
+#
+# This card is just a launcher into that Configure screen, plus a link to
+# the holdings table for a read-only view of the same numbers.
+
+type: custom:vertical-stack-in-card
+card_mod:
+  style: |
+    ha-card {
+      background: var(--ha-card-background, var(--card-background-color, #ffffff));
+      border-radius: var(--ha-card-border-radius, 12px);
+      padding: 18px 16px 24px 16px;
+      box-shadow: var(--ha-card-box-shadow, 0 2px 6px rgba(0, 0, 0, 0.1));
+      border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
+    }
+cards:
+  - type: custom:mushroom-title-card
+    title: Manage Portfolio
+    subtitle: Add a stock, buy or sell shares, or edit cost basis
+    card_mod:
+      style: |
+        ha-card { padding: 4px; }
+        .title { font-size: 20px !important; font-weight: 800 !important; }
+        .subtitle { color: var(--secondary-text-color) !important; }
+  - type: custom:button-card
+    name: Open Configure
+    icon: mdi:cog-outline
+    show_name: true
+    show_icon: true
+    tap_action:
+      action: navigate
+      navigation_path: /config/integrations/integration/portfolio_tracker
+    styles:
+      card:
+        - background: var(--ha-card-background, var(--card-background-color, #eef1f6))
+        - border-radius: 16px
+        - border: 1px solid var(--divider-color, rgba(15, 23, 42, 0.06))
+        - padding: 16px
+      name:
+        - font-size: 15px
+        - font-weight: 700
+      icon:
+        - color: '#0284c7'

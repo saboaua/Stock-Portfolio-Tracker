@@ -1,0 +1,55 @@
+buy_shares:
+  name: Buy shares
+  description: >-
+    Add shares to a holding. If the symbol isn't in your portfolio yet, this
+    creates it. Great for wiring up a Lovelace form or an automation.
+  fields:
+    symbol:
+      name: Symbol
+      description: Ticker symbol (e.g. NVDA, VUAA.L)
+      required: true
+      example: "NVDA"
+      selector:
+        text:
+    shares:
+      name: Shares
+      description: Number of shares purchased
+      required: true
+      selector:
+        number:
+          min: 0
+          step: 0.0001
+          mode: box
+    cost:
+      name: Total cost
+      description: Total dollar amount spent on this purchase (not per-share price)
+      required: true
+      selector:
+        number:
+          min: 0
+          step: 0.01
+          mode: box
+
+sell_shares:
+  name: Sell shares
+  description: >-
+    Remove shares from a holding. Invested capital is reduced proportionally
+    using the current average cost basis. Selling all shares removes the
+    holding.
+  fields:
+    symbol:
+      name: Symbol
+      description: Ticker symbol to sell
+      required: true
+      example: "NVDA"
+      selector:
+        text:
+    shares:
+      name: Shares
+      description: Number of shares sold
+      required: true
+      selector:
+        number:
+          min: 0
+          step: 0.0001
+          mode: box
