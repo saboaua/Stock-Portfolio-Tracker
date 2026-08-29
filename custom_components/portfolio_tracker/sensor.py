@@ -414,46 +414,86 @@ class PortfolioRealizedGainSensor(_BaseTotalSensor):
         }
 
 
-class PortfolioHoldingsTableSensor(_BaseTotalSensor):
-    """Feeds a custom:flex-table-card holdings table."""
+class PortfolioHoldingsTableSensor(CoordinatorEntity, SensorEntity):
+    """Feeds a custom:flex-table-card holdings table.
 
+    Intentionally does NOT inherit _BaseTotalSensor: that base is MONETARY /
+    MEASUREMENT with a currency unit, which is invalid for a timestamp state
+    and caused this entity to go unavailable.
+    """
+
+    _attr_has_entity_name = False
     _attr_device_class = None
     _attr_state_class = None
     _attr_native_unit_of_measurement = None
+    _attr_icon = "mdi:table"
+    _attr_name = "Portfolio Holdings Table"
 
     def __init__(self, coordinator, entry):
-        super().__init__(coordinator, entry)
+        super().__init__(coordinator)
+        self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_holdings_table"
-        self._attr_name = "Portfolio Holdings Table"
-        self._attr_icon = "mdi:table"
+        self._attr_device_info = _device_info(entry)
+        # Prefer clean entity_id; registry may keep portfolio_tracker_ prefix on upgrades
         self.entity_id = "sensor.portfolio_holdings_table"
+
+    @property
+    def available(self) -> bool:
+        # Stay available as long as the coordinator object exists and we have
+        # holdings config — even if the last Yahoo poll failed (show last rows / zeros).
+        return self.coordinator is not None
+
+    @property
+    def _holdings(self) -> dict:
+        return self._entry.options.get(CONF_HOLDINGS, {}) or {}
 
     @property
     def native_value(self):
         return datetime.now().strftime("%Y-%m-%d %H:%M")
 
     @property
+    def native_unit_of_measurement(self):
+        return None
+
+    @property
     def extra_state_attributes(self):
         rows = []
         portfolio_total = 0.0
-        # first pass for allocation
         tmp = []
         for symbol, holding in self._holdings.items():
-            price_data = self.coordinator.price_data(symbol)
-            price = price_data.get("price") or 0
-            shares = float(holding.get(CONF_SHARES, 0) or 0)
-            invested = float(holding.get(CONF_INVESTED, 0) or 0)
+            try:
+                price_data = self.coordinator.price_data(symbol) or {}
+            except Exception:  # noqa: BLE001
+                price_data = {}
+            try:
+                price = float(price_data.get("price") or 0)
+            except (TypeError, ValueError):
+                price = 0.0
+            try:
+                shares = float(holding.get(CONF_SHARES, 0) or 0)
+            except (TypeError, ValueError):
+                shares = 0.0
+            try:
+                invested = float(holding.get(CONF_INVESTED, 0) or 0)
+            except (TypeError, ValueError):
+                invested = 0.0
             market_value = price * shares
             portfolio_total += market_value
             tmp.append((symbol, holding, price_data, price, shares, invested, market_value))
 
         for symbol, holding, price_data, price, shares, invested, market_value in tmp:
-            avg_cost = (invested / shares) if shares else 0
-            day_change = price_data.get("day_change") or 0
-            day_change_pct = price_data.get("day_change_pct") or 0
+            avg_cost = (invested / shares) if shares else 0.0
+            try:
+                day_change = float(price_data.get("day_change") or 0)
+            except (TypeError, ValueError):
+                day_change = 0.0
+            try:
+                day_change_pct = float(price_data.get("day_change_pct") or 0)
+            except (TypeError, ValueError):
+                day_change_pct = 0.0
             gain = market_value - invested
-            gain_pct = (gain / invested * 100) if invested else 0
-            alloc = (market_value / portfolio_total * 100) if portfolio_total else 0
+            gain_pct = (gain / invested * 100) if invested else 0.0
+            alloc = (market_value / portfolio_total * 100) if portfolio_total else 0.0
 
             rows.append(
                 {
@@ -473,6 +513,7 @@ class PortfolioHoldingsTableSensor(_BaseTotalSensor):
                 }
             )
         return {"rows": rows, "holdings_count": len(rows)}
+
 
 
 class MarketSessionSensor(SensorEntity):

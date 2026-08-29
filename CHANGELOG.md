@@ -26,3 +26,8 @@
 - Configure menu still shows icons via emoji labels in a list selector
 - Hardened Lovelace static-path registration for older HA builds
 - Position allocation total uses FX-aware values
+
+## 1.4.2 — 2026-08-29
+
+### Fixed
+- **`sensor.portfolio_holdings_table` unavailable** — table sensor no longer inherits the monetary base class (currency unit + MEASUREMENT on a timestamp state). Stays available even if the last Yahoo poll failed; builds rows safely from holdings + last prices.

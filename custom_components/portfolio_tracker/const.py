@@ -1,7 +1,7 @@
 """Constants for Portfolio Tracker."""
 
 DOMAIN = "portfolio_tracker"
-VERSION = "1.4.1"
+VERSION = "1.4.2"
 
 CONF_HOLDINGS = "holdings"
 CONF_SYMBOL = "symbol"

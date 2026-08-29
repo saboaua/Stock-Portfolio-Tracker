@@ -168,12 +168,18 @@ class PortfolioDataCoordinator(DataUpdateCoordinator):
     # ---- helpers for sensors ----
 
     def price_data(self, symbol: str) -> dict:
+        """Return price payload for symbol; always a dict (never None)."""
         data = self.data or {}
-        prices = data.get("prices") or {}
-        # Back-compat if old shape
-        if symbol in data and isinstance(data.get(symbol), dict):
-            return data.get(symbol) or {}
-        return prices.get(symbol) or {}
+        prices = data.get("prices")
+        if isinstance(prices, dict):
+            payload = prices.get(symbol)
+            if isinstance(payload, dict):
+                return payload
+        # Back-compat if old flat shape {symbol: {...}}
+        payload = data.get(symbol)
+        if isinstance(payload, dict):
+            return payload
+        return {}
 
     def fx_rate(self, currency: str | None) -> float:
         data = self.data or {}
