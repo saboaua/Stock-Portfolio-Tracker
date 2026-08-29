@@ -29,12 +29,13 @@ from .const import (
     MAX_TRADE_LOG,
     SERVICE_BUY,
     SERVICE_SELL,
+    SERVICE_REFRESH,
 )
 from .coordinator import PortfolioDataCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.CALENDAR]
+PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.CALENDAR, Platform.BUTTON]
 
 BUY_SCHEMA = vol.Schema(
     {
@@ -127,7 +128,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id, None)
         if not any(k for k in hass.data.get(DOMAIN, {}) if k != "_card_registered"):
-            for service in (SERVICE_BUY, SERVICE_SELL):
+            for service in (SERVICE_BUY, SERVICE_SELL, SERVICE_REFRESH):
                 if hass.services.has_service(DOMAIN, service):
                     hass.services.async_remove(DOMAIN, service)
     return unload_ok
@@ -226,5 +227,16 @@ def _register_services(hass: HomeAssistant) -> None:
         )
         hass.config_entries.async_update_entry(entry, options=new_options)
 
+    async def handle_refresh(call: ServiceCall) -> None:
+        entry = _get_entry()
+        if entry is None:
+            _LOGGER.error("Portfolio Tracker is not set up")
+            return
+        data = hass.data.get(DOMAIN, {}).get(entry.entry_id, {})
+        coordinator = data.get("coordinator")
+        if coordinator:
+            await coordinator.async_request_refresh()
+
     hass.services.async_register(DOMAIN, SERVICE_BUY, handle_buy, schema=BUY_SCHEMA)
     hass.services.async_register(DOMAIN, SERVICE_SELL, handle_sell, schema=SELL_SCHEMA)
+    hass.services.async_register(DOMAIN, SERVICE_REFRESH, handle_refresh)

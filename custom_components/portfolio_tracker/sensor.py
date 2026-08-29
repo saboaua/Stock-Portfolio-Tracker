@@ -46,6 +46,7 @@ async def async_setup_entry(
     entities.append(PortfolioTotalGainSensor(coordinator, entry))
     entities.append(PortfolioDayChangeSensor(coordinator, entry))
     entities.append(PortfolioHoldingsCountSensor(coordinator, entry))
+    entities.append(PortfolioLastUpdateSensor(coordinator, entry))
     entities.append(PortfolioRealizedGainSensor(coordinator, entry))
     entities.append(PortfolioHoldingsTableSensor(coordinator, entry))
     entities.append(MarketSessionSensor(entry, "us", "US Market Session"))
@@ -388,6 +389,46 @@ class PortfolioHoldingsCountSensor(_BaseTotalSensor):
     @property
     def extra_state_attributes(self):
         return {"symbols": sorted(self._holdings.keys())}
+
+
+class PortfolioLastUpdateSensor(CoordinatorEntity, SensorEntity):
+    """Timestamp of the last successful Yahoo Finance refresh."""
+
+    _attr_has_entity_name = False
+    _attr_name = "Portfolio Last Update"
+    _attr_icon = "mdi:clock-check-outline"
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+
+    def __init__(self, coordinator, entry):
+        super().__init__(coordinator)
+        self._entry = entry
+        self._attr_unique_id = f"{entry.entry_id}_last_update"
+        self._attr_device_info = _device_info(entry)
+        self.entity_id = "sensor.portfolio_last_update"
+
+    @property
+    def available(self) -> bool:
+        return self.coordinator is not None
+
+    @property
+    def native_value(self):
+        ts = getattr(self.coordinator, "last_success_time", None)
+        if ts is not None:
+            return ts
+        # Fall back to coordinator last_update_success_time if present
+        return getattr(self.coordinator, "last_update_success_time", None)
+
+    @property
+    def extra_state_attributes(self):
+        data = self.coordinator.data or {}
+        return {
+            "last_success": data.get("last_success"),
+            "failed_symbols": data.get("failed_symbols") or [],
+            "last_error": getattr(self.coordinator, "last_error", None),
+            "last_update_success": getattr(
+                self.coordinator, "last_update_success", None
+            ),
+        }
 
 
 class PortfolioRealizedGainSensor(_BaseTotalSensor):

@@ -6,7 +6,8 @@ from datetime import datetime, timedelta, timezone
 
 import aiohttp
 
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
@@ -49,12 +50,19 @@ class PortfolioDataCoordinator(DataUpdateCoordinator):
         self._scan_minutes = scan_minutes
         self._idle_minutes = idle_minutes
         self._session = async_get_clientsession(hass)
+        self._fail_count = 0
+        self.last_success_time = None
+        self.last_error = None
 
     def set_intervals(self, scan_minutes: int, idle_minutes: int) -> None:
         self._scan_minutes = scan_minutes
         self._idle_minutes = idle_minutes
 
     async def _async_update_data(self):
+        from datetime import datetime, timezone
+        from homeassistant.components import persistent_notification
+        from .const import DOMAIN, NOTIFICATION_ID
+
         if market_hours.any_market_open():
             self.update_interval = timedelta(minutes=self._scan_minutes)
         else:
@@ -66,6 +74,7 @@ class PortfolioDataCoordinator(DataUpdateCoordinator):
         prices: dict[str, dict | None] = {}
         currencies: set[str] = set()
         dividends: list[dict] = []
+        failed: list[str] = []
 
         for symbol in symbols:
             try:
@@ -75,17 +84,47 @@ class PortfolioDataCoordinator(DataUpdateCoordinator):
                     currencies.add(data["currency"])
                 if data and data.get("dividends"):
                     dividends.extend(data["dividends"])
+                if not data or data.get("price") is None:
+                    failed.append(symbol)
             except Exception as err:  # noqa: BLE001
                 _LOGGER.warning("Could not update %s: %s", symbol, err)
                 prices[symbol] = None
+                failed.append(symbol)
+                self.last_error = f"{symbol}: {err}"
 
         rates = await build_rate_table(self._session, currencies | {base}, base)
+
+        # All symbols failed (and we had symbols) → notify
+        if symbols and len(failed) == len(symbols):
+            self._fail_count += 1
+            if self._fail_count >= 2:
+                persistent_notification.async_create(
+                    self.hass,
+                    (
+                        f"Portfolio Tracker could not refresh prices for: "
+                        f"{', '.join(failed)}. "
+                        f"Last error: {self.last_error or 'unknown'}. "
+                        "Check network or try the Portfolio Refresh button."
+                    ),
+                    title="Portfolio Tracker — update failed",
+                    notification_id=NOTIFICATION_ID,
+                )
+        else:
+            self._fail_count = 0
+            self.last_success_time = datetime.now(timezone.utc)
+            self.last_error = None
+            # Dismiss prior error notification on recovery
+            persistent_notification.async_dismiss(self.hass, NOTIFICATION_ID)
 
         return {
             "prices": prices,
             "fx_rates": rates,
             "base_currency": base,
             "dividends": sorted(dividends, key=lambda d: d.get("date") or ""),
+            "failed_symbols": failed,
+            "last_success": (
+                self.last_success_time.isoformat() if self.last_success_time else None
+            ),
         }
 
     async def _fetch_symbol(self, symbol: str) -> dict:

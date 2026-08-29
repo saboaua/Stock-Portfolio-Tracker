@@ -1,7 +1,7 @@
 """Constants for Portfolio Tracker."""
 
 DOMAIN = "portfolio_tracker"
-VERSION = "1.4.3"
+VERSION = "1.4.4"
 
 CONF_HOLDINGS = "holdings"
 CONF_SYMBOL = "symbol"
@@ -21,8 +21,6 @@ MAX_TRADE_LOG = 50
 
 SERVICE_BUY = "buy_shares"
 SERVICE_SELL = "sell_shares"
+SERVICE_REFRESH = "refresh"
 
-# Common display currencies for the options selector
-SUPPORTED_CURRENCIES = [
-    "USD", "EUR", "GBP", "CHF", "CAD", "AUD", "JPY", "HKD", "SGD", "SEK", "NOK", "DKK", "PLN", "CZK", "HUF", "RON", "INR", "CNY", "KRW", "BRL", "MXN", "ZAR", "NZD",
-]
+NOTIFICATION_ID = "portfolio_tracker_error"

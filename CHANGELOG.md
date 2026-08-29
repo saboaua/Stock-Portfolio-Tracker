@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.4.4 — 2026-08-29
+
+### Added
+- **Manual refresh** — `button.portfolio_refresh` + `portfolio_tracker.refresh` service
+- **Last update** — `sensor.portfolio_last_update` (timestamp of last successful poll)
+- **Error notifications** — persistent notification after repeated Yahoo failures; cleared on recovery
+- Modern HACS `info.md` with logo and feature matrix
+
 ## 1.4.3 — 2026-08-29
 
 ### Added

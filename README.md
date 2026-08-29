@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.4.3-blue?style=flat-square">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.4.4-blue?style=flat-square">
   <img alt="HACS" src="https://img.shields.io/badge/HACS-Custom-orange?style=flat-square">
   <img alt="HA" src="https://img.shields.io/badge/Home%20Assistant-2024.6+-41BDF5?style=flat-square">
 </p>
@@ -128,4 +128,4 @@ HA Devices & Services shows `brand/icon.png`. The HACS *Downloaded* list may sti
 
 ## Version updates
 
-Bump is in `manifest.json` → `version` (**1.4.3**). Publish a GitHub Release so HACS offers the update, then restart HA.
+Bump is in `manifest.json` → `version` (**1.4.4**). Publish a GitHub Release so HACS offers the update, then restart HA.
