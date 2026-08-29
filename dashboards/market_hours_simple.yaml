@@ -2,17 +2,18 @@
 # Required HACS Frontend: button-card
 # Optional: card-mod (for outer padding only)
 #
-# Uses sensor.*_market_session (state is "open" / "closed")
-# Entity IDs match current install: portfolio_tracker_ prefix
+# Uses binary_sensor.*_market_open (or sensor.*_market_session as fallback).
+# Countdown from attributes next_open / next_close (server-side, TZ-aware).
 
 type: horizontal-stack
 cards:
   - type: custom:button-card
-    entity: sensor.portfolio_tracker_us_market_session
+    entity: binary_sensor.us_market_open
     show_name: false
     show_icon: false
     show_state: false
     show_label: true
+    triggers_update: all
     tap_action:
       action: more-info
     styles:
@@ -24,14 +25,30 @@ cards:
         - width: 100%
     label: |
       [[[
-        const s = states['sensor.portfolio_tracker_us_market_session'];
-        // session sensor states are "open" / "closed" (not on/off)
-        const isOpen = (s?.state || '').toLowerCase() === 'open';
-        const opensAt = s?.attributes?.opens_at_local || '09:30';
-        const closesAt = s?.attributes?.closes_at_local || '16:00';
+        const s = states['binary_sensor.us_market_open']
+              || states['binary_sensor.portfolio_tracker_us_market_open']
+              || states['sensor.us_market_session']
+              || states['sensor.portfolio_tracker_us_market_session'];
+        const st = (s?.state || '').toLowerCase();
+        const isOpen = st === 'on' || st === 'open';
         const color = isOpen ? '#059669' : '#dc2626';
         const bg = isOpen ? 'rgba(5,150,105,0.12)' : 'rgba(220,38,38,0.12)';
-        const labelText = isOpen ? `CLOSES ${closesAt} ET` : `OPENS ${opensAt} ET`;
+        const labelText = isOpen ? 'CLOSES IN' : 'OPENS IN';
+        const targetIso = isOpen
+          ? (s?.attributes?.next_close || null)
+          : (s?.attributes?.next_open || null);
+        let timeStr = '—';
+        if (targetIso) {
+          const target = new Date(targetIso);
+          const diffMs = Math.max(0, target - Date.now());
+          const totalMin = Math.floor(diffMs / 60000);
+          const days = Math.floor(totalMin / 1440);
+          const hours = Math.floor((totalMin % 1440) / 60);
+          const minutes = totalMin % 60;
+          timeStr = (days > 0 ? days + 'd ' : '') +
+                    String(hours).padStart(2, '0') + 'h ' +
+                    String(minutes).padStart(2, '0') + 'm';
+        }
         const dotAnim = isOpen ? 'animation: pulseUS 1.6s ease-in-out infinite;' : '';
         return `
           <style>
@@ -51,8 +68,8 @@ cards:
                 </span>
               </div>
               <div style="text-align:center; flex-shrink:0; white-space:nowrap;">
-                <div style="font-size:11px; font-weight:700; color:var(--secondary-text-color, #94a3b8); letter-spacing:0.5px; margin-bottom:2px; line-height:1;">NYSE / NASDAQ</div>
-                <div style="font-size:15px; font-weight:800; color:var(--primary-text-color, #0f172a); line-height:1.2;">${labelText}</div>
+                <div style="font-size:11px; font-weight:700; color:var(--secondary-text-color, #94a3b8); letter-spacing:0.5px; margin-bottom:2px; line-height:1;">${labelText}</div>
+                <div style="font-size:22px; font-weight:800; color:var(--primary-text-color, #0f172a); font-variant-numeric:tabular-nums; line-height:1.2;">${timeStr}</div>
               </div>
             </div>
           </div>
@@ -60,11 +77,12 @@ cards:
       ]]]
 
   - type: custom:button-card
-    entity: sensor.portfolio_tracker_eu_market_session
+    entity: binary_sensor.eu_market_open
     show_name: false
     show_icon: false
     show_state: false
     show_label: true
+    triggers_update: all
     tap_action:
       action: more-info
     styles:
@@ -76,13 +94,30 @@ cards:
         - width: 100%
     label: |
       [[[
-        const s = states['sensor.portfolio_tracker_eu_market_session'];
-        const isOpen = (s?.state || '').toLowerCase() === 'open';
-        const opensAt = s?.attributes?.opens_at_local || '08:00';
-        const closesAt = s?.attributes?.closes_at_local || '16:30';
+        const s = states['binary_sensor.eu_market_open']
+              || states['binary_sensor.portfolio_tracker_eu_market_open']
+              || states['sensor.eu_market_session']
+              || states['sensor.portfolio_tracker_eu_market_session'];
+        const st = (s?.state || '').toLowerCase();
+        const isOpen = st === 'on' || st === 'open';
         const color = isOpen ? '#059669' : '#dc2626';
         const bg = isOpen ? 'rgba(5,150,105,0.12)' : 'rgba(220,38,38,0.12)';
-        const labelText = isOpen ? `CLOSES ${closesAt} LDN` : `OPENS ${opensAt} LDN`;
+        const labelText = isOpen ? 'CLOSES IN' : 'OPENS IN';
+        const targetIso = isOpen
+          ? (s?.attributes?.next_close || null)
+          : (s?.attributes?.next_open || null);
+        let timeStr = '—';
+        if (targetIso) {
+          const target = new Date(targetIso);
+          const diffMs = Math.max(0, target - Date.now());
+          const totalMin = Math.floor(diffMs / 60000);
+          const days = Math.floor(totalMin / 1440);
+          const hours = Math.floor((totalMin % 1440) / 60);
+          const minutes = totalMin % 60;
+          timeStr = (days > 0 ? days + 'd ' : '') +
+                    String(hours).padStart(2, '0') + 'h ' +
+                    String(minutes).padStart(2, '0') + 'm';
+        }
         const dotAnim = isOpen ? 'animation: pulseEU 1.6s ease-in-out infinite;' : '';
         return `
           <style>
@@ -102,8 +137,8 @@ cards:
                 </span>
               </div>
               <div style="text-align:center; flex-shrink:0; white-space:nowrap;">
-                <div style="font-size:11px; font-weight:700; color:var(--secondary-text-color, #94a3b8); letter-spacing:0.5px; margin-bottom:2px; line-height:1;">LSE / EURONEXT</div>
-                <div style="font-size:15px; font-weight:800; color:var(--primary-text-color, #0f172a); line-height:1.2;">${labelText}</div>
+                <div style="font-size:11px; font-weight:700; color:var(--secondary-text-color, #94a3b8); letter-spacing:0.5px; margin-bottom:2px; line-height:1;">${labelText}</div>
+                <div style="font-size:22px; font-weight:800; color:var(--primary-text-color, #0f172a); font-variant-numeric:tabular-nums; line-height:1.2;">${timeStr}</div>
               </div>
             </div>
           </div>

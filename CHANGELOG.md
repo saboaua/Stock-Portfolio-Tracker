@@ -1,33 +1,30 @@
 # Changelog
 
-## 1.4.0 — 2026-08-29
+## 1.4.3 — 2026-08-29
 
 ### Added
-- Configure menu options with **Material icons** (list selector)
-- **Base currency** + multi-currency FX (Yahoo pairs, totals in base ccy)
-- **Dividend calendar** entity `calendar.portfolio_dividends`
-- Native **Lovelace card** `portfolio-tracker-card.js`
-- Documentation / issue links → https://github.com/saboaua/Stock-Portfolio-Tracker
+- Wide **logo** on HACS info / README
+- Sparkline history on price data and holdings table rows
+- Native card **charts** view — ticker grid with price, % change, sparkline
+- Native card **holdings** view — shares, avg cost, invested, market value, gain
+- Card tabs: Summary / Charts / Holdings; range 1W / 1M
+- Crypto guidance in Configure (Yahoo symbols e.g. BTC-USD)
 
-### Changed
-- Coordinator data shape includes `prices`, `fx_rates`, `dividends`
-- Portfolio aggregate sensors report values in the configured base currency
+### Fixed (from 1.4.1 / 1.4.2)
+- Config flow load failure from invalid `SelectOptionDict(icon=...)`
+- Holdings table sensor unavailable (no longer inherits monetary base class)
+
+## 1.4.2
+- Holdings table availability fix
+
+## 1.4.1
+- Config flow 400 Bad Request fix
+
+## 1.4.0
+- Base currency FX, dividend calendar, menu selector, native card foundation
 
 ## 1.3.0
-- Realized P/L, trade log, 512px icons, polished README
+- Realized P/L, trade log, brand icons
 
 ## 1.2.0
 - Diagnostics, holdings count, allocation %, update intervals
-
-## 1.4.1 — 2026-08-29
-
-### Fixed
-- **Config flow could not be loaded (400)** — removed invalid `SelectOptionDict(..., icon=...)` which raised at import on many HA versions
-- Configure menu still shows icons via emoji labels in a list selector
-- Hardened Lovelace static-path registration for older HA builds
-- Position allocation total uses FX-aware values
-
-## 1.4.2 — 2026-08-29
-
-### Fixed
-- **`sensor.portfolio_holdings_table` unavailable** — table sensor no longer inherits the monetary base class (currency unit + MEASUREMENT on a timestamp state). Stays available even if the last Yahoo poll failed; builds rows safely from holdings + last prices.

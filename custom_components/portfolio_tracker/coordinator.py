@@ -116,6 +116,15 @@ class PortfolioDataCoordinator(DataUpdateCoordinator):
         except (KeyError, IndexError, TypeError) as err:
             raise UpdateFailed(f"Unexpected response shape for {symbol}") from err
 
+        # Sparkline: last closes from the daily series (up to 30 points)
+        sparkline: list[float] = []
+        try:
+            quotes = (result.get("indicators") or {}).get("quote") or []
+            closes = (quotes[0].get("close") if quotes else None) or []
+            sparkline = [float(c) for c in closes if c is not None][-30:]
+        except (TypeError, ValueError, IndexError, AttributeError):
+            sparkline = []
+
         day_change = None
         day_change_pct = None
         if price is not None and previous_close:
@@ -162,6 +171,7 @@ class PortfolioDataCoordinator(DataUpdateCoordinator):
             "fifty_two_week_low": meta.get("fiftyTwoWeekLow"),
             "regular_market_volume": meta.get("regularMarketVolume"),
             "instrument_type": meta.get("instrumentType"),
+            "sparkline": sparkline,
             "dividends": divs,
         }
 

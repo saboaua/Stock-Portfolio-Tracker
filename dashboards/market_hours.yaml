@@ -1,11 +1,12 @@
-# Requires from HACS (Frontend): layout-card, card_mod
+# Requires from HACS (Frontend): layout-card, button-card, card_mod
 # Requires from this integration: binary_sensor.us_market_open, binary_sensor.eu_market_open
 #
-# Replaces the old version, which computed open/close by hardcoding
-# 9:30/16:00 and 3:00/11:30 in the *viewing browser's* local time. That
-# breaks for anyone not in exactly the right timezone and ignores DST.
-# This version reads binary_sensor.us_market_open / eu_market_open, which
-# are computed server-side in each exchange's real timezone.
+# Uses server-side binary sensors (exchange timezone + DST aware).
+# Countdown is computed from attributes next_open / next_close so the
+# timer is correct regardless of the browser's local timezone.
+#
+# Visual style matches the classic countdown cards (OPEN/CLOSED badge +
+# "CLOSES IN" / "OPENS IN" + d/h/m remaining).
 
 type: custom:vertical-stack-in-card
 cards:
@@ -26,11 +27,17 @@ cards:
         show_icon: false
         show_state: false
         show_label: true
+        triggers_update: all
         tap_action:
           action: more-info
         card_mod:
           style: |
-            :host { width: 100% !important; max-width: 500px !important; display: block !important; margin: 0 auto !important; }
+            :host {
+              width: 100% !important;
+              max-width: 500px !important;
+              display: block !important;
+              margin: 0 auto !important;
+            }
         styles:
           card:
             - background: transparent
@@ -40,15 +47,28 @@ cards:
             - width: 100%
         label: |
           [[[
-            const s = states['binary_sensor.us_market_open'];
+            const s = states['binary_sensor.us_market_open']
+                  || states['binary_sensor.portfolio_tracker_us_market_open'];
             const isOpen = s?.state === 'on';
-            const opensAt = s?.attributes?.opens_at_local || '09:30';
-            const closesAt = s?.attributes?.closes_at_local || '16:00';
             const color = isOpen ? '#059669' : '#dc2626';
             const bg = isOpen ? 'rgba(5,150,105,0.12)' : 'rgba(220,38,38,0.12)';
-            const labelText = isOpen ? `CLOSES ${closesAt} ET` : `OPENS ${opensAt} ET`;
+            const labelText = isOpen ? 'CLOSES IN' : 'OPENS IN';
+            const targetIso = isOpen
+              ? (s?.attributes?.next_close || null)
+              : (s?.attributes?.next_open || null);
+            let timeStr = '—';
+            if (targetIso) {
+              const target = new Date(targetIso);
+              const diffMs = Math.max(0, target - Date.now());
+              const totalMin = Math.floor(diffMs / 60000);
+              const days = Math.floor(totalMin / 1440);
+              const hours = Math.floor((totalMin % 1440) / 60);
+              const minutes = totalMin % 60;
+              timeStr = (days > 0 ? days + 'd ' : '') +
+                        String(hours).padStart(2, '0') + 'h ' +
+                        String(minutes).padStart(2, '0') + 'm';
+            }
             const dotAnim = isOpen ? 'animation: pulseUS 1.6s ease-in-out infinite;' : '';
-
             return `
               <style>
                 @keyframes pulseUS {
@@ -67,8 +87,8 @@ cards:
                     </span>
                   </div>
                   <div style="text-align:center; flex-shrink:0; white-space:nowrap;">
-                    <div style="font-size:11px; font-weight:700; color:var(--secondary-text-color, #94a3b8); letter-spacing:0.5px; margin-bottom:2px; line-height:1;">NYSE / NASDAQ</div>
-                    <div style="font-size:16px; font-weight:800; color:var(--primary-text-color, #0f172a); line-height:1.2;">${labelText}</div>
+                    <div style="font-size:11px; font-weight:700; color:var(--secondary-text-color, #94a3b8); letter-spacing:0.5px; margin-bottom:2px; line-height:1;">${labelText}</div>
+                    <div style="font-size:24px; font-weight:800; color:var(--primary-text-color, #0f172a); font-variant-numeric:tabular-nums; line-height:1.2;">${timeStr}</div>
                   </div>
                 </div>
               </div>
@@ -81,11 +101,17 @@ cards:
         show_icon: false
         show_state: false
         show_label: true
+        triggers_update: all
         tap_action:
           action: more-info
         card_mod:
           style: |
-            :host { width: 100% !important; max-width: 500px !important; display: block !important; margin: 0 auto !important; }
+            :host {
+              width: 100% !important;
+              max-width: 500px !important;
+              display: block !important;
+              margin: 0 auto !important;
+            }
         styles:
           card:
             - background: transparent
@@ -95,15 +121,28 @@ cards:
             - width: 100%
         label: |
           [[[
-            const s = states['binary_sensor.eu_market_open'];
+            const s = states['binary_sensor.eu_market_open']
+                  || states['binary_sensor.portfolio_tracker_eu_market_open'];
             const isOpen = s?.state === 'on';
-            const opensAt = s?.attributes?.opens_at_local || '08:00';
-            const closesAt = s?.attributes?.closes_at_local || '16:30';
             const color = isOpen ? '#059669' : '#dc2626';
             const bg = isOpen ? 'rgba(5,150,105,0.12)' : 'rgba(220,38,38,0.12)';
-            const labelText = isOpen ? `CLOSES ${closesAt} LDN` : `OPENS ${opensAt} LDN`;
+            const labelText = isOpen ? 'CLOSES IN' : 'OPENS IN';
+            const targetIso = isOpen
+              ? (s?.attributes?.next_close || null)
+              : (s?.attributes?.next_open || null);
+            let timeStr = '—';
+            if (targetIso) {
+              const target = new Date(targetIso);
+              const diffMs = Math.max(0, target - Date.now());
+              const totalMin = Math.floor(diffMs / 60000);
+              const days = Math.floor(totalMin / 1440);
+              const hours = Math.floor((totalMin % 1440) / 60);
+              const minutes = totalMin % 60;
+              timeStr = (days > 0 ? days + 'd ' : '') +
+                        String(hours).padStart(2, '0') + 'h ' +
+                        String(minutes).padStart(2, '0') + 'm';
+            }
             const dotAnim = isOpen ? 'animation: pulseEU 1.6s ease-in-out infinite;' : '';
-
             return `
               <style>
                 @keyframes pulseEU {
@@ -122,8 +161,8 @@ cards:
                     </span>
                   </div>
                   <div style="text-align:center; flex-shrink:0; white-space:nowrap;">
-                    <div style="font-size:11px; font-weight:700; color:var(--secondary-text-color, #94a3b8); letter-spacing:0.5px; margin-bottom:2px; line-height:1;">LSE / EURONEXT</div>
-                    <div style="font-size:16px; font-weight:800; color:var(--primary-text-color, #0f172a); line-height:1.2;">${labelText}</div>
+                    <div style="font-size:11px; font-weight:700; color:var(--secondary-text-color, #94a3b8); letter-spacing:0.5px; margin-bottom:2px; line-height:1;">${labelText}</div>
+                    <div style="font-size:24px; font-weight:800; color:var(--primary-text-color, #0f172a); font-variant-numeric:tabular-nums; line-height:1.2;">${timeStr}</div>
                   </div>
                 </div>
               </div>

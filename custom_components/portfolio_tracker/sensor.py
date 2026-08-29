@@ -128,6 +128,7 @@ class PortfolioPriceSensor(_BaseHoldingSensor):
             "fifty_two_week_low": d.get("fifty_two_week_low"),
             "regular_market_volume": d.get("regular_market_volume"),
             "instrument_type": d.get("instrument_type"),
+            "sparkline": d.get("sparkline") or [],
         }
 
 
@@ -499,9 +500,14 @@ class PortfolioHoldingsTableSensor(CoordinatorEntity, SensorEntity):
                 {
                     "symbol": symbol,
                     "name": price_data.get("short_name") or symbol,
+                    "long_name": price_data.get("long_name")
+                    or price_data.get("short_name")
+                    or symbol,
                     "status": "Open",
                     "shares": round(shares, 2),
                     "last_price": round(price, 2),
+                    "previous_close": price_data.get("previous_close"),
+                    "currency": price_data.get("currency") or "USD",
                     "ac_share": round(avg_cost, 2),
                     "total_cost": round(invested, 2),
                     "market_value": round(market_value, 2),
@@ -510,6 +516,7 @@ class PortfolioHoldingsTableSensor(CoordinatorEntity, SensorEntity):
                     "day_gain_dollar": round(day_change * shares, 2),
                     "tot_gain_pct": round(gain_pct, 2),
                     "tot_gain_dollar": round(gain, 2),
+                    "sparkline": price_data.get("sparkline") or [],
                 }
             )
         return {"rows": rows, "holdings_count": len(rows)}

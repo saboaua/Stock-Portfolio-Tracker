@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="icon.png" alt="Portfolio Tracker" width="120" height="120">
+  <img src="logo.png" alt="Portfolio Tracker" width="420">
 </p>
 
 <h1 align="center">Portfolio Tracker</h1>
@@ -10,7 +10,7 @@
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.4.0-blue?style=flat-square">
+  <img alt="Version" src="https://img.shields.io/badge/version-1.4.3-blue?style=flat-square">
   <img alt="HACS" src="https://img.shields.io/badge/HACS-Custom-orange?style=flat-square">
   <img alt="HA" src="https://img.shields.io/badge/Home%20Assistant-2024.6+-41BDF5?style=flat-square">
 </p>
@@ -64,12 +64,32 @@ After install + restart, add a resource:
 | URL | `/portfolio_tracker_static/portfolio-tracker-card.js` |
 | Type | JavaScript Module |
 
-Card YAML:
-
 ```yaml
 type: custom:portfolio-tracker-card
-title: Portfolio
+title: My Portfolio
+view: charts    # summary | charts | holdings
+range: 1W       # 1W | 1M  (charts view sparklines)
 ```
+
+| `view` | What you see |
+|--------|----------------|
+| `summary` | Total value, unrealized / day P/L, market pills |
+| `charts` | Grid of tickers with price, % change, and sparkline (like a watchlist) |
+| `holdings` | Shares, avg cost, invested, market value, gain for every position |
+
+Tabs on the card switch views without editing YAML.
+
+### Adding crypto
+
+Use Yahoo Finance symbols when you **Add a new stock** (same form as equities):
+
+| Asset | Symbol |
+|-------|--------|
+| Bitcoin | `BTC-USD` |
+| Ethereum | `ETH-USD` |
+| Solana | `SOL-USD` |
+
+Configure → **Add a new stock** → enter `BTC-USD`, units, and total cost basis.
 
 ---
 
@@ -108,4 +128,4 @@ HA Devices & Services shows `brand/icon.png`. The HACS *Downloaded* list may sti
 
 ## Version updates
 
-Bump is in `manifest.json` → `version` (**1.4.0**). Publish a GitHub Release so HACS offers the update, then restart HA.
+Bump is in `manifest.json` → `version` (**1.4.3**). Publish a GitHub Release so HACS offers the update, then restart HA.

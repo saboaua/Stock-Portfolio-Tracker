@@ -2,8 +2,8 @@
   "config": {
     "step": {
       "user": {
-        "title": "Set up Portfolio Tracker",
-        "description": "Click Submit to create your portfolio. You'll add your stocks next, from the integration's 'Configure' options."
+        "title": "Portfolio Tracker",
+        "description": "Creates an empty portfolio. Add stocks, ETFs, or crypto after setup via Configure.\n\nCrypto uses Yahoo symbols, e.g. BTC-USD, ETH-USD, SOL-USD."
       }
     },
     "abort": {
@@ -20,13 +20,14 @@
         }
       },
       "add_holding": {
-        "title": "Add a stock",
+        "title": "Add a new holding",
         "data": {
-          "symbol": "Ticker symbol (e.g. NVDA, VUAA.L)",
-          "shares": "Number of shares",
-          "invested": "Total invested capital ($)",
-          "entry_date": "Entry date (YYYY-MM-DD)"
-        }
+          "symbol": "Symbol (e.g. NVDA or BTC-USD)",
+          "shares": "Number of shares / units",
+          "invested": "Total amount invested (cost basis)",
+          "entry_date": "Purchase date (YYYY-MM-DD)"
+        },
+        "description": "Enter a Yahoo Finance symbol.\n\n\u2022 US stocks / ETFs: NVDA, GOOGL, XLK\n\u2022 London listings: VUAA.L\n\u2022 Crypto: BTC-USD, ETH-USD, SOL-USD\n\nShares and total invested (cost basis) are required."
       },
       "buy_shares_symbol": {
         "title": "Which stock did you buy?",
