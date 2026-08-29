@@ -40,6 +40,14 @@ from .const import (
     SCHEDULE_PRESET_LABELS,
     MAX_TRADE_LOG,
     SUPPORTED_CURRENCIES,
+    CONF_RETIRE_ENABLED,
+    CONF_RETIRE_HORIZON,
+    CONF_RETIRE_BASELINE,
+    CONF_RETIRE_START_YEAR,
+    CONF_RETIRE_CONTRIBUTION,
+    CONF_RETIRE_SCENARIO,
+    DEFAULT_RETIRE_HORIZON,
+    DEFAULT_RETIRE_SCENARIO,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -53,6 +61,7 @@ MENU_OPTION_LIST = [
     {"value": "edit_holding_symbol", "label": "✏️  Edit shares / cost basis"},
     {"value": "remove_holding", "label": "🗑️  Remove a stock"},
     {"value": "settings", "label": "⚙️  Settings (currency & intervals)"},
+    {"value": "retire_plan", "label": "🎯  Retirement forecast plan"},
 ]
 
 
@@ -400,4 +409,80 @@ class PortfolioTrackerOptionsFlowHandler(config_entries.OptionsFlow):
             }
         )
         return self.async_show_form(step_id="settings", data_schema=schema)
+
+
+    # -------------------------------------------------------------- retirement
+
+    async def async_step_retire_plan(self, user_input=None):
+        """Configure multi-year forecast scenarios for ApexCharts / sensors."""
+        from datetime import date as date_cls
+
+        opts = self.config_entry.options
+        if user_input is not None:
+            new_options = dict(opts)
+            new_options[CONF_RETIRE_ENABLED] = bool(user_input.get(CONF_RETIRE_ENABLED, True))
+            new_options[CONF_RETIRE_HORIZON] = int(user_input[CONF_RETIRE_HORIZON])
+            baseline = user_input.get(CONF_RETIRE_BASELINE)
+            if baseline is None or baseline == "" or float(baseline) <= 0:
+                # Leave existing or 0 — sensor will fall back to live total
+                new_options[CONF_RETIRE_BASELINE] = float(
+                    opts.get(CONF_RETIRE_BASELINE) or 0
+                )
+            else:
+                new_options[CONF_RETIRE_BASELINE] = float(baseline)
+            new_options[CONF_RETIRE_START_YEAR] = int(
+                user_input.get(CONF_RETIRE_START_YEAR) or date_cls.today().year
+            )
+            new_options[CONF_RETIRE_CONTRIBUTION] = float(
+                user_input.get(CONF_RETIRE_CONTRIBUTION) or 0
+            )
+            new_options[CONF_RETIRE_SCENARIO] = str(
+                user_input.get(CONF_RETIRE_SCENARIO) or DEFAULT_RETIRE_SCENARIO
+            )
+            return self.async_create_entry(title="", data=new_options)
+
+        scenario_options = [
+            {"value": "conservative", "label": "Conservative 8%"},
+            {"value": "moderate", "label": "Moderate 10%"},
+            {"value": "nasdaq", "label": "Nasdaq-like 15%"},
+            {"value": "aggressive", "label": "Aggressive 20%"},
+            {"value": "upside", "label": "Upside 22%"},
+        ]
+        schema = vol.Schema(
+            {
+                vol.Required(
+                    CONF_RETIRE_ENABLED,
+                    default=bool(opts.get(CONF_RETIRE_ENABLED, True)),
+                ): bool,
+                vol.Required(
+                    CONF_RETIRE_HORIZON,
+                    default=int(opts.get(CONF_RETIRE_HORIZON, DEFAULT_RETIRE_HORIZON)),
+                ): vol.All(vol.Coerce(int), vol.Range(min=4, max=10)),
+                vol.Optional(
+                    CONF_RETIRE_BASELINE,
+                    default=float(opts.get(CONF_RETIRE_BASELINE) or 0),
+                ): vol.Coerce(float),
+                vol.Required(
+                    CONF_RETIRE_START_YEAR,
+                    default=int(
+                        opts.get(CONF_RETIRE_START_YEAR) or date_cls.today().year
+                    ),
+                ): vol.All(vol.Coerce(int), vol.Range(min=2000, max=2100)),
+                vol.Optional(
+                    CONF_RETIRE_CONTRIBUTION,
+                    default=float(opts.get(CONF_RETIRE_CONTRIBUTION) or 0),
+                ): vol.Coerce(float),
+                vol.Required(
+                    CONF_RETIRE_SCENARIO,
+                    default=opts.get(CONF_RETIRE_SCENARIO, DEFAULT_RETIRE_SCENARIO),
+                ): SelectSelector(
+                    SelectSelectorConfig(
+                        options=scenario_options,
+                        mode=SelectSelectorMode.DROPDOWN,
+                    )
+                ),
+            }
+        )
+        return self.async_show_form(step_id="retire_plan", data_schema=schema)
+
 

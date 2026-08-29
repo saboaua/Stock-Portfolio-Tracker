@@ -51,6 +51,9 @@ async def async_setup_entry(
     entities.append(PortfolioHoldingsTableSensor(coordinator, entry))
     entities.append(MarketSessionSensor(entry, "us", "US Market Session"))
     entities.append(MarketSessionSensor(entry, "eu", "EU Market Session"))
+    entities.append(PortfolioRetirePlanSensor(coordinator, entry))
+    entities.append(PortfolioRetireProgressSensor(coordinator, entry))
+    entities.append(PortfolioRetireTargetSensor(coordinator, entry))
 
     async_add_entities(entities)
 
@@ -630,3 +633,196 @@ class MarketSessionSensor(SensorEntity):
             "next_open_local": next_open.strftime("%Y-%m-%d %H:%M"),
             "next_close_local": next_close.strftime("%Y-%m-%d %H:%M"),
         }
+
+
+class _RetireMixin:
+    """Shared retirement plan payload from options + live total value."""
+
+    def _retire_payload(self) -> dict:
+        from datetime import date as date_cls
+        from .retire import build_plan_payload
+
+        opts = self._entry.options
+        if not opts.get(CONF_RETIRE_ENABLED, True):
+            return {}
+
+        # Live portfolio value for actual + optional baseline fallback
+        actual = None
+        try:
+            # Reuse total-value math via a lightweight sum
+            holdings = opts.get(CONF_HOLDINGS, {}) or {}
+            total = 0.0
+            any_price = False
+            for sym, h in holdings.items():
+                pd = self.coordinator.price_data(sym)
+                price = pd.get("price")
+                if price is None:
+                    continue
+                shares = float(h.get(CONF_SHARES, 0) or 0)
+                ccy = pd.get("currency")
+                total += float(price) * shares * float(self.coordinator.fx_rate(ccy))
+                any_price = True
+            if any_price:
+                actual = round(total, 2)
+        except Exception:  # noqa: BLE001
+            actual = None
+
+        baseline = float(opts.get(CONF_RETIRE_BASELINE) or 0)
+        if baseline <= 0 and actual is not None:
+            baseline = actual
+        if baseline <= 0:
+            baseline = 0.0
+
+        start_year = int(opts.get(CONF_RETIRE_START_YEAR) or date_cls.today().year)
+        horizon = int(opts.get(CONF_RETIRE_HORIZON) or DEFAULT_RETIRE_HORIZON)
+        contrib = float(opts.get(CONF_RETIRE_CONTRIBUTION) or 0)
+        selected = str(opts.get(CONF_RETIRE_SCENARIO) or DEFAULT_RETIRE_SCENARIO)
+
+        return build_plan_payload(
+            baseline=baseline,
+            start_year=start_year,
+            horizon_years=horizon,
+            annual_contribution=contrib,
+            actual=actual,
+            selected=selected,
+        )
+
+
+class PortfolioRetirePlanSensor(_RetireMixin, CoordinatorEntity, SensorEntity):
+    """Primary retirement plan sensor — attributes power ApexCharts series."""
+
+    _attr_has_entity_name = False
+    _attr_name = "Portfolio Retire Plan"
+    _attr_icon = "mdi:chart-timeline-variant"
+
+    def __init__(self, coordinator, entry):
+        super().__init__(coordinator)
+        self._entry = entry
+        self._attr_unique_id = f"{entry.entry_id}_retire_plan"
+        self._attr_device_info = _device_info(entry)
+        self.entity_id = "sensor.portfolio_retire_plan"
+
+    @property
+    def available(self) -> bool:
+        return bool(self._entry.options.get(CONF_RETIRE_ENABLED, True))
+
+    @property
+    def native_value(self):
+        payload = self._retire_payload()
+        if not payload:
+            return None
+        # State = expected value on selected path for current plan year
+        return payload.get("expected_now")
+
+    @property
+    def native_unit_of_measurement(self):
+        return self.coordinator.base_currency()
+
+    @property
+    def extra_state_attributes(self):
+        payload = self._retire_payload()
+        if not payload:
+            return {}
+        # Flatten scenario targets for easy templates / Apex
+        attrs = {
+            "baseline": payload.get("baseline"),
+            "start_year": payload.get("start_year"),
+            "end_year": payload.get("end_year"),
+            "horizon_years": payload.get("horizon_years"),
+            "annual_contribution": payload.get("annual_contribution"),
+            "selected_scenario": payload.get("selected_scenario"),
+            "plan_year": payload.get("plan_year"),
+            "expected_now": payload.get("expected_now"),
+            "actual": payload.get("actual"),
+            "progress_pct": payload.get("progress_pct"),
+            "delta": payload.get("delta"),
+            "on_track": payload.get("on_track"),
+            "disclaimer": payload.get("disclaimer"),
+        }
+        scenarios = payload.get("scenarios") or {}
+        for key, sc in scenarios.items():
+            attrs[f"{key}_rate_pct"] = sc.get("rate_pct")
+            attrs[f"{key}_target"] = sc.get("target")
+            attrs[f"{key}_points"] = sc.get("points")
+            attrs[f"{key}_label"] = sc.get("label")
+        return attrs
+
+
+class PortfolioRetireProgressSensor(_RetireMixin, CoordinatorEntity, SensorEntity):
+    """Actual vs expected for the selected scenario (%)."""
+
+    _attr_has_entity_name = False
+    _attr_name = "Portfolio Retire Progress"
+    _attr_icon = "mdi:target"
+    _attr_native_unit_of_measurement = "%"
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
+    def __init__(self, coordinator, entry):
+        super().__init__(coordinator)
+        self._entry = entry
+        self._attr_unique_id = f"{entry.entry_id}_retire_progress"
+        self._attr_device_info = _device_info(entry)
+        self.entity_id = "sensor.portfolio_retire_progress"
+
+    @property
+    def available(self) -> bool:
+        return bool(self._entry.options.get(CONF_RETIRE_ENABLED, True))
+
+    @property
+    def native_value(self):
+        return (self._retire_payload() or {}).get("progress_pct")
+
+    @property
+    def extra_state_attributes(self):
+        p = self._retire_payload() or {}
+        return {
+            "delta": p.get("delta"),
+            "on_track": p.get("on_track"),
+            "expected_now": p.get("expected_now"),
+            "actual": p.get("actual"),
+            "selected_scenario": p.get("selected_scenario"),
+            "plan_year": p.get("plan_year"),
+        }
+
+
+class PortfolioRetireTargetSensor(_RetireMixin, CoordinatorEntity, SensorEntity):
+    """Horizon target value for the selected scenario."""
+
+    _attr_has_entity_name = False
+    _attr_name = "Portfolio Retire Target"
+    _attr_icon = "mdi:flag-checkered"
+    _attr_device_class = SensorDeviceClass.MONETARY
+    _attr_state_class = SensorStateClass.MEASUREMENT
+
+    def __init__(self, coordinator, entry):
+        super().__init__(coordinator)
+        self._entry = entry
+        self._attr_unique_id = f"{entry.entry_id}_retire_target"
+        self._attr_device_info = _device_info(entry)
+        self.entity_id = "sensor.portfolio_retire_target"
+
+    @property
+    def available(self) -> bool:
+        return bool(self._entry.options.get(CONF_RETIRE_ENABLED, True))
+
+    @property
+    def native_value(self):
+        p = self._retire_payload() or {}
+        key = p.get("selected_scenario") or "moderate"
+        sc = (p.get("scenarios") or {}).get(key) or {}
+        return sc.get("target")
+
+    @property
+    def native_unit_of_measurement(self):
+        return self.coordinator.base_currency()
+
+    @property
+    def extra_state_attributes(self):
+        p = self._retire_payload() or {}
+        return {
+            "selected_scenario": p.get("selected_scenario"),
+            "horizon_years": p.get("horizon_years"),
+            "end_year": p.get("end_year"),
+            "baseline": p.get("baseline"),
+        }
+

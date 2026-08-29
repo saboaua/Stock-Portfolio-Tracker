@@ -1,19 +1,21 @@
 # Changelog
 
-## 1.4.6 — 2026-08-29
+## 1.5.0 — 2026-08-29
 
 ### Added
-- **Smarter update schedule** in Configure → Settings
-  - Presets: Active (5/30), Balanced (15/60), Conservative (30/120), Custom
-  - Optional fixed snapshots at 09:35, 12:00, 16:05 (local HA time)
-- Market open still uses the open-interval; closed uses the idle-interval
+- **Retirement forecast plan** (Configure → Retirement forecast plan)
+  - Horizon 4–10 years, baseline, start year, annual contribution
+  - Scenarios: Conservative 8%, Moderate 10%, Nasdaq 15%, Aggressive 20%, Upside 22%
+- Sensors: `sensor.portfolio_retire_plan`, `…_retire_progress`, `…_retire_target`
+- Plan attributes include `*_points` arrays for **ApexCharts** `data_generator`
+- Example dashboard: `dashboards/retire_forecast_apexcharts.yaml`
 
 ### Notes
-- Retirement forecast + ApexCharts dashboard examples planned for 1.5.x
-- Core data path remains the stable 1.4.5.1 sensor/coordinator stack
+- Forecasts are illustrative constant-growth paths — not financial advice
+- Charting uses the community **ApexCharts Card** (install via HACS)
+
+## 1.4.6
+- Schedule presets + optional fixed snapshots
 
 ## 1.4.5.1
-- Restored working sensors after import error in 1.4.5
-
-## 1.4.3
-- Last broadly confirmed working data release before schedule work
+- Restored working sensors after import error

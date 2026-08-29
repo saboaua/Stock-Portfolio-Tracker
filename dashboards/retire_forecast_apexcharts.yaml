@@ -1,0 +1,162 @@
+# Requires: HACS → ApexCharts Card
+# Configure → Retirement forecast plan (baseline, horizon 4–10, scenario)
+# Entity IDs assume default names; adjust if your install prefixes portfolio_tracker_
+
+type: custom:apexcharts-card
+header:
+  show: true
+  title: Portfolio – Actual vs Forecast Scenarios
+  show_states: true
+  colorize_states: true
+graph_span: 11y
+span:
+  start: year
+now:
+  show: true
+  label: Now
+  color: '#ff9800'
+apex_config:
+  chart:
+    height: 460
+  legend:
+    show: true
+    position: bottom
+  tooltip:
+    shared: true
+    x:
+      format: yyyy
+  yaxis:
+    - labels:
+        formatter: |
+          EVAL:function(value) {
+            return "$" + Math.round(value).toLocaleString();
+          }
+series:
+  - entity: sensor.portfolio_total_value
+    name: Actual
+    type: line
+    color: '#2196f3'
+    stroke_width: 4
+    extend_to: now
+    show:
+      extremas: true
+      in_header: true
+      legend_value: true
+
+  - entity: sensor.portfolio_retire_plan
+    name: Conservative 8%
+    type: line
+    color: '#4caf50'
+    stroke_width: 2
+    stroke_dash: 5
+    extend_to: false
+    show:
+      in_header: false
+      legend_value: false
+    data_generator: |
+      const attr = entity.attributes || {};
+      const pts = attr.conservative_points;
+      if (pts && pts.length) return pts;
+      const baseline = parseFloat(attr.baseline) || 0;
+      const startYear = parseInt(attr.start_year) || new Date().getFullYear();
+      const endYear = parseInt(attr.end_year) || startYear + 10;
+      const points = [];
+      for (let y = startYear; y <= endYear; y++) {
+        const years = y - startYear;
+        points.push([new Date(y, 0, 1).getTime(), Math.round(baseline * Math.pow(1.08, years))]);
+      }
+      return points;
+
+  - entity: sensor.portfolio_retire_plan
+    name: Moderate 10%
+    type: line
+    color: '#8bc34a'
+    stroke_width: 2
+    stroke_dash: 5
+    extend_to: false
+    show:
+      in_header: false
+      legend_value: false
+    data_generator: |
+      const attr = entity.attributes || {};
+      const pts = attr.moderate_points;
+      if (pts && pts.length) return pts;
+      const baseline = parseFloat(attr.baseline) || 0;
+      const startYear = parseInt(attr.start_year) || new Date().getFullYear();
+      const endYear = parseInt(attr.end_year) || startYear + 10;
+      const points = [];
+      for (let y = startYear; y <= endYear; y++) {
+        points.push([new Date(y, 0, 1).getTime(), Math.round(baseline * Math.pow(1.10, y - startYear))]);
+      }
+      return points;
+
+  - entity: sensor.portfolio_retire_plan
+    name: Nasdaq 15%
+    type: line
+    color: '#ff9800'
+    stroke_width: 2
+    stroke_dash: 4
+    extend_to: false
+    show:
+      in_header: false
+      legend_value: false
+    data_generator: |
+      const attr = entity.attributes || {};
+      const pts = attr.nasdaq_points;
+      if (pts && pts.length) return pts;
+      const baseline = parseFloat(attr.baseline) || 0;
+      const startYear = parseInt(attr.start_year) || new Date().getFullYear();
+      const endYear = parseInt(attr.end_year) || startYear + 10;
+      const points = [];
+      for (let y = startYear; y <= endYear; y++) {
+        points.push([new Date(y, 0, 1).getTime(), Math.round(baseline * Math.pow(1.15, y - startYear))]);
+      }
+      return points;
+
+  - entity: sensor.portfolio_retire_plan
+    name: Aggressive 20%
+    type: line
+    color: '#e91e63'
+    stroke_width: 3
+    extend_to: false
+    show:
+      in_header: false
+      legend_value: false
+    data_generator: |
+      const attr = entity.attributes || {};
+      const pts = attr.aggressive_points;
+      if (pts && pts.length) return pts;
+      const baseline = parseFloat(attr.baseline) || 0;
+      const startYear = parseInt(attr.start_year) || new Date().getFullYear();
+      const endYear = parseInt(attr.end_year) || startYear + 10;
+      const points = [];
+      for (let y = startYear; y <= endYear; y++) {
+        points.push([new Date(y, 0, 1).getTime(), Math.round(baseline * Math.pow(1.20, y - startYear))]);
+      }
+      return points;
+
+  - entity: sensor.portfolio_retire_plan
+    name: Upside 22%
+    type: line
+    color: '#9c27b0'
+    stroke_width: 2
+    stroke_dash: 4
+    extend_to: false
+    show:
+      in_header: false
+      legend_value: false
+    data_generator: |
+      const attr = entity.attributes || {};
+      const pts = attr.upside_points;
+      if (pts && pts.length) return pts;
+      const baseline = parseFloat(attr.baseline) || 0;
+      const startYear = parseInt(attr.start_year) || new Date().getFullYear();
+      const endYear = parseInt(attr.end_year) || startYear + 10;
+      const points = [];
+      for (let y = startYear; y <= endYear; y++) {
+        points.push([new Date(y, 0, 1).getTime(), Math.round(baseline * Math.pow(1.22, y - startYear))]);
+      }
+      return points;
+
+grid_options:
+  columns: full

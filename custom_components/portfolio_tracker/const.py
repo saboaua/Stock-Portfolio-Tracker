@@ -1,7 +1,7 @@
 """Constants for Portfolio Tracker."""
 
 DOMAIN = "portfolio_tracker"
-VERSION = "1.4.6"
+VERSION = "1.5.0"
 
 CONF_HOLDINGS = "holdings"
 CONF_SYMBOL = "symbol"
@@ -59,3 +59,15 @@ def resolve_scan_intervals(options: dict) -> tuple[int, int]:
     scan = max(1, min(120, scan))
     idle = max(5, min(360, idle))
     return scan, idle
+
+# Retirement / forecast plan
+CONF_RETIRE_ENABLED = "retire_enabled"
+CONF_RETIRE_HORIZON = "retire_horizon"
+CONF_RETIRE_BASELINE = "retire_baseline"
+CONF_RETIRE_START_YEAR = "retire_start_year"
+CONF_RETIRE_CONTRIBUTION = "retire_annual_contribution"
+CONF_RETIRE_SCENARIO = "retire_scenario"
+CONF_RETIRE_YEARLY_ACTUALS = "retire_yearly_actuals"
+
+DEFAULT_RETIRE_HORIZON = 10
+DEFAULT_RETIRE_SCENARIO = "moderate"

@@ -75,6 +75,18 @@
           "symbol": "Symbol"
         }
       },
+      "retire_plan": {
+        "title": "Retirement forecast plan",
+        "description": "Illustrative compound-growth scenarios (4–10 years). Used by ApexCharts and retire sensors. Not financial advice. Leave baseline 0 to use live portfolio value.",
+        "data": {
+          "retire_enabled": "Enable retirement forecast sensors",
+          "retire_horizon": "Horizon (years)",
+          "retire_baseline": "Baseline value (0 = use live total)",
+          "retire_start_year": "Plan start year",
+          "retire_annual_contribution": "Extra annual contribution",
+          "retire_scenario": "Primary scenario (progress / on-track)"
+        }
+      },
       "settings": {
         "title": "Settings",
         "description": "Base currency, update schedule preset, and optional fixed snapshot times (09:35, 12:00, 16:05 local).",
