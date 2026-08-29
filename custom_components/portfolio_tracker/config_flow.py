@@ -1,4 +1,8 @@
-"""Config flow for Portfolio Tracker."""
+"""Config flow for Portfolio Tracker.
+
+Initial setup creates an empty portfolio. Day-to-day management is done
+through the Configure (options) flow.
+"""
 from __future__ import annotations
 
 from datetime import date
@@ -12,7 +16,6 @@ from homeassistant.helpers.selector import (
     SelectSelector,
     SelectSelectorConfig,
     SelectSelectorMode,
-    SelectOptionDict,
 )
 
 from .const import (
@@ -36,13 +39,15 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-MENU_OPTIONS = [
-    SelectOptionDict(value="add_holding", label="Add a new stock", icon="mdi:plus-circle-outline"),
-    SelectOptionDict(value="buy_shares_symbol", label="Buy more shares", icon="mdi:cart-arrow-down"),
-    SelectOptionDict(value="sell_shares_symbol", label="Sell shares", icon="mdi:cart-arrow-up"),
-    SelectOptionDict(value="edit_holding_symbol", label="Edit shares / cost basis", icon="mdi:pencil-outline"),
-    SelectOptionDict(value="remove_holding", label="Remove a stock", icon="mdi:trash-can-outline"),
-    SelectOptionDict(value="settings", label="Settings (currency & intervals)", icon="mdi:cog-outline"),
+# Plain dicts only (value + label). Do NOT pass icon= into SelectOptionDict —
+# that raises TypeError on many HA versions and prevents the flow from loading.
+MENU_OPTION_LIST = [
+    {"value": "add_holding", "label": "➕  Add a new stock"},
+    {"value": "buy_shares_symbol", "label": "🛒  Buy more shares"},
+    {"value": "sell_shares_symbol", "label": "💰  Sell shares"},
+    {"value": "edit_holding_symbol", "label": "✏️  Edit shares / cost basis"},
+    {"value": "remove_holding", "label": "🗑️  Remove a stock"},
+    {"value": "settings", "label": "⚙️  Settings (currency & intervals)"},
 ]
 
 
@@ -62,7 +67,7 @@ class PortfolioTrackerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 options={
                     CONF_HOLDINGS: {},
                     CONF_BASE_CURRENCY: DEFAULT_BASE_CURRENCY,
-                    CONF_REALIZED_GAIN: 0,
+                    CONF_REALIZED_GAIN: 0.0,
                     CONF_TRADE_LOG: [],
                 },
             )
@@ -80,31 +85,31 @@ class PortfolioTrackerOptionsFlowHandler(config_entries.OptionsFlow):
 
     def __init__(self) -> None:
         self._pending_symbol: str | None = None
-        self._pending_action: str | None = None
 
     @property
     def _holdings(self) -> dict:
         return dict(self.config_entry.options.get(CONF_HOLDINGS, {}))
 
-    async def _save(self, holdings: dict, **extra):
+    async def _save_holdings(self, holdings: dict):
         new_options = dict(self.config_entry.options)
         new_options[CONF_HOLDINGS] = holdings
-        new_options.update(extra)
         return self.async_create_entry(title="", data=new_options)
 
-    # ---------------------------------------------------------------- menu (with icons)
+    # ---------------------------------------------------------------- menu
 
     async def async_step_init(self, user_input=None):
         if user_input is not None:
-            action = user_input.get("action")
-            self._pending_action = action
-            return await getattr(self, f"async_step_{action}")()
+            action = user_input["action"]
+            handler = getattr(self, f"async_step_{action}", None)
+            if handler is None:
+                return self.async_abort(reason="no_holdings")
+            return await handler()
 
         schema = vol.Schema(
             {
                 vol.Required("action"): SelectSelector(
                     SelectSelectorConfig(
-                        options=MENU_OPTIONS,
+                        options=MENU_OPTION_LIST,
                         mode=SelectSelectorMode.LIST,
                     )
                 )
@@ -117,7 +122,7 @@ class PortfolioTrackerOptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_add_holding(self, user_input=None):
         errors = {}
         if user_input is not None:
-            symbol = user_input[CONF_SYMBOL].strip().upper()
+            symbol = str(user_input[CONF_SYMBOL]).strip().upper()
             holdings = self._holdings
             if not symbol:
                 errors["base"] = "invalid_symbol"
@@ -127,9 +132,10 @@ class PortfolioTrackerOptionsFlowHandler(config_entries.OptionsFlow):
                 holdings[symbol] = {
                     CONF_SHARES: float(user_input[CONF_SHARES]),
                     CONF_INVESTED: float(user_input[CONF_INVESTED]),
-                    CONF_ENTRY_DATE: user_input.get(CONF_ENTRY_DATE) or str(date.today()),
+                    CONF_ENTRY_DATE: user_input.get(CONF_ENTRY_DATE)
+                    or str(date.today()),
                 }
-                return await self._save(holdings)
+                return await self._save_holdings(holdings)
 
         schema = vol.Schema(
             {
@@ -161,7 +167,7 @@ class PortfolioTrackerOptionsFlowHandler(config_entries.OptionsFlow):
         symbol = self._pending_symbol
         if user_input is not None:
             holdings = self._holdings
-            h = holdings[symbol]
+            h = dict(holdings[symbol])
             h[CONF_SHARES] = round(
                 float(h[CONF_SHARES]) + float(user_input["shares"]), 6
             )
@@ -169,7 +175,7 @@ class PortfolioTrackerOptionsFlowHandler(config_entries.OptionsFlow):
                 float(h[CONF_INVESTED]) + float(user_input["cost"]), 2
             )
             holdings[symbol] = h
-            return await self._save(holdings)
+            return await self._save_holdings(holdings)
 
         schema = vol.Schema(
             {
@@ -180,7 +186,7 @@ class PortfolioTrackerOptionsFlowHandler(config_entries.OptionsFlow):
         return self.async_show_form(
             step_id="buy_shares_amount",
             data_schema=schema,
-            description_placeholders={"symbol": symbol},
+            description_placeholders={"symbol": symbol or ""},
         )
 
     # ---------------------------------------------------------------- sell
@@ -200,25 +206,31 @@ class PortfolioTrackerOptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_sell_shares_amount(self, user_input=None):
         symbol = self._pending_symbol
         holdings = self._holdings
-        h = holdings[symbol]
+        h = holdings.get(symbol, {})
         errors = {}
 
         if user_input is not None:
-            cur_shares = float(h[CONF_SHARES])
+            cur_shares = float(h.get(CONF_SHARES, 0))
             sell_shares = float(user_input["shares"])
             if sell_shares <= 0 or sell_shares > cur_shares:
                 errors["base"] = "invalid_shares"
             else:
-                avg_cost = float(h[CONF_INVESTED]) / cur_shares if cur_shares else 0
+                avg_cost = (
+                    float(h.get(CONF_INVESTED, 0)) / cur_shares if cur_shares else 0
+                )
                 cost_basis_sold = avg_cost * sell_shares
                 proceeds = float(user_input.get("proceeds") or 0)
                 realized = (proceeds - cost_basis_sold) if proceeds else 0.0
-                h[CONF_SHARES] = round(cur_shares - sell_shares, 6)
-                h[CONF_INVESTED] = round(float(h[CONF_INVESTED]) - cost_basis_sold, 2)
-                if h[CONF_SHARES] <= 0:
+                new_h = dict(h)
+                new_h[CONF_SHARES] = round(cur_shares - sell_shares, 6)
+                new_h[CONF_INVESTED] = round(
+                    float(h.get(CONF_INVESTED, 0)) - cost_basis_sold, 2
+                )
+                if new_h[CONF_SHARES] <= 0:
                     holdings.pop(symbol, None)
                 else:
-                    holdings[symbol] = h
+                    holdings[symbol] = new_h
+
                 new_options = dict(self.config_entry.options)
                 new_options[CONF_HOLDINGS] = holdings
                 if proceeds:
@@ -251,8 +263,8 @@ class PortfolioTrackerOptionsFlowHandler(config_entries.OptionsFlow):
             data_schema=schema,
             errors=errors,
             description_placeholders={
-                "symbol": symbol,
-                "current_shares": str(h.get(CONF_SHARES)),
+                "symbol": symbol or "",
+                "current_shares": str(h.get(CONF_SHARES, 0)),
             },
         )
 
@@ -273,31 +285,35 @@ class PortfolioTrackerOptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_edit_holding_values(self, user_input=None):
         symbol = self._pending_symbol
         holdings = self._holdings
-        h = holdings[symbol]
+        h = holdings.get(symbol, {})
 
         if user_input is not None:
-            h[CONF_SHARES] = float(user_input["shares"])
-            h[CONF_INVESTED] = float(user_input["invested"])
+            new_h = dict(h)
+            new_h[CONF_SHARES] = float(user_input["shares"])
+            new_h[CONF_INVESTED] = float(user_input["invested"])
             if user_input.get(CONF_ENTRY_DATE):
-                h[CONF_ENTRY_DATE] = user_input[CONF_ENTRY_DATE]
-            holdings[symbol] = h
-            return await self._save(holdings)
+                new_h[CONF_ENTRY_DATE] = user_input[CONF_ENTRY_DATE]
+            holdings[symbol] = new_h
+            return await self._save_holdings(holdings)
 
         schema = vol.Schema(
             {
-                vol.Required("shares", default=h.get(CONF_SHARES, 0)): vol.Coerce(float),
-                vol.Required("invested", default=h.get(CONF_INVESTED, 0)): vol.Coerce(
-                    float
-                ),
+                vol.Required(
+                    "shares", default=float(h.get(CONF_SHARES, 0) or 0)
+                ): vol.Coerce(float),
+                vol.Required(
+                    "invested", default=float(h.get(CONF_INVESTED, 0) or 0)
+                ): vol.Coerce(float),
                 vol.Optional(
-                    CONF_ENTRY_DATE, default=h.get(CONF_ENTRY_DATE, str(date.today()))
+                    CONF_ENTRY_DATE,
+                    default=h.get(CONF_ENTRY_DATE, str(date.today())),
                 ): str,
             }
         )
         return self.async_show_form(
             step_id="edit_holding_values",
             data_schema=schema,
-            description_placeholders={"symbol": symbol},
+            description_placeholders={"symbol": symbol or ""},
         )
 
     # -------------------------------------------------------------- remove
@@ -308,7 +324,7 @@ class PortfolioTrackerOptionsFlowHandler(config_entries.OptionsFlow):
             return self.async_abort(reason="no_holdings")
         if user_input is not None:
             holdings.pop(user_input[CONF_SYMBOL], None)
-            return await self._save(holdings)
+            return await self._save_holdings(holdings)
         schema = vol.Schema(
             {vol.Required(CONF_SYMBOL): vol.In(sorted(holdings.keys()))}
         )
@@ -323,7 +339,7 @@ class PortfolioTrackerOptionsFlowHandler(config_entries.OptionsFlow):
             new_options[CONF_IDLE_SCAN_INTERVAL] = int(
                 user_input[CONF_IDLE_SCAN_INTERVAL]
             )
-            new_options[CONF_BASE_CURRENCY] = user_input[CONF_BASE_CURRENCY]
+            new_options[CONF_BASE_CURRENCY] = str(user_input[CONF_BASE_CURRENCY])
             return self.async_create_entry(title="", data=new_options)
 
         opts = self.config_entry.options
@@ -334,18 +350,20 @@ class PortfolioTrackerOptionsFlowHandler(config_entries.OptionsFlow):
                     default=opts.get(CONF_BASE_CURRENCY, DEFAULT_BASE_CURRENCY),
                 ): SelectSelector(
                     SelectSelectorConfig(
-                        options=SUPPORTED_CURRENCIES,
+                        options=list(SUPPORTED_CURRENCIES),
                         mode=SelectSelectorMode.DROPDOWN,
                     )
                 ),
                 vol.Required(
                     CONF_SCAN_INTERVAL,
-                    default=opts.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_MINUTES),
+                    default=int(
+                        opts.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_MINUTES)
+                    ),
                 ): vol.All(vol.Coerce(int), vol.Range(min=1, max=60)),
                 vol.Required(
                     CONF_IDLE_SCAN_INTERVAL,
-                    default=opts.get(
-                        CONF_IDLE_SCAN_INTERVAL, IDLE_SCAN_INTERVAL_MINUTES
+                    default=int(
+                        opts.get(CONF_IDLE_SCAN_INTERVAL, IDLE_SCAN_INTERVAL_MINUTES)
                     ),
                 ): vol.All(vol.Coerce(int), vol.Range(min=5, max=240)),
             }

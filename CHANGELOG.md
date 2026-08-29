@@ -18,3 +18,11 @@
 
 ## 1.2.0
 - Diagnostics, holdings count, allocation %, update intervals
+
+## 1.4.1 — 2026-08-29
+
+### Fixed
+- **Config flow could not be loaded (400)** — removed invalid `SelectOptionDict(..., icon=...)` which raised at import on many HA versions
+- Configure menu still shows icons via emoji labels in a list selector
+- Hardened Lovelace static-path registration for older HA builds
+- Position allocation total uses FX-aware values

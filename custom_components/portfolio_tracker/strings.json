@@ -14,7 +14,7 @@
     "step": {
       "init": {
         "title": "Manage Portfolio",
-        "description": "Choose an action. Icons appear next to each option.",
+        "description": "Choose an action.",
         "data": {
           "action": "Action"
         }

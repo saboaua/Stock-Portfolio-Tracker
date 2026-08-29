@@ -154,13 +154,12 @@ class PortfolioPositionSensor(_BaseHoldingSensor):
     def _portfolio_total(self) -> float:
         total = 0.0
         holdings = self._entry.options.get(CONF_HOLDINGS, {})
-        data = self.coordinator.data or {}
         for sym, holding in holdings.items():
-            pd = data.get(sym) or {}
+            pd = self.coordinator.price_data(sym)
             price = pd.get("price")
             shares = float(holding.get(CONF_SHARES, 0) or 0)
             if price is not None:
-                total += price * shares
+                total += price * shares * self.coordinator.fx_rate(pd.get("currency"))
         return total
 
     @property

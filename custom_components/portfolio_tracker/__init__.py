@@ -11,8 +11,6 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers import config_validation as cv
-from homeassistant.components.http import StaticPathConfig
-
 from .const import (
     DOMAIN,
     VERSION,
@@ -96,19 +94,28 @@ async def _async_register_lovelace_card(hass: HomeAssistant) -> None:
     if not www.is_dir():
         return
     try:
-        await hass.http.async_register_static_paths(
-            [
-                StaticPathConfig(
-                    "/portfolio_tracker_static",
-                    str(www),
-                    cache_headers=False,
-                )
-            ]
-        )
+        # HA 2024.6+: StaticPathConfig + async_register_static_paths
+        try:
+            from homeassistant.components.http import StaticPathConfig
+
+            await hass.http.async_register_static_paths(
+                [
+                    StaticPathConfig(
+                        "/portfolio_tracker_static",
+                        str(www),
+                        cache_headers=False,
+                    )
+                ]
+            )
+        except (ImportError, AttributeError, TypeError):
+            # Older HA fallback
+            hass.http.register_static_path(
+                "/portfolio_tracker_static", str(www), cache_headers=False
+            )
         hass.data[DOMAIN]["_card_registered"] = True
         _LOGGER.debug("Registered Lovelace card static path")
     except Exception as err:  # noqa: BLE001
-        _LOGGER.debug("Static path registration skipped: %s", err)
+        _LOGGER.warning("Lovelace card static path not registered: %s", err)
 
 
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
