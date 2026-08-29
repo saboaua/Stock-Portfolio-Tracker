@@ -1,7 +1,3 @@
-# NOTE (v2.0): entity IDs below assume a portfolio named "Main"
-# (sensor.investing_main_...). Replace "main" with your own portfolio's
-# name (lowercased) if you named it something else.
-#
 # Replaces the old "Portfolio Inputs" card, which edited
 # input_number.<symbol>_invested_capital / _shares and
 # input_datetime.<symbol>_entry_date directly. Those helpers are no

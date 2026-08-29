@@ -2,19 +2,12 @@
   "config": {
     "step": {
       "user": {
-        "title": "Add a Portfolio Tracker portfolio",
-        "description": "Give this portfolio a short name (e.g. 'Main', 'Cesar', 'Retirement'). You can add more portfolios later by running Add Integration again with a different name.",
-        "data": {
-          "name": "Portfolio name"
-        }
+        "title": "Set up Portfolio Tracker",
+        "description": "Click Submit to create your portfolio. You'll add your stocks next, from the integration's 'Configure' options."
       }
     },
     "abort": {
-      "single_instance_allowed": "Portfolio Tracker is already configured."
-    },
-    "error": {
-      "name_required": "Enter a portfolio name.",
-      "name_exists": "A portfolio with that name already exists."
+      "single_instance_allowed": "Portfolio Tracker is already configured. Use Configure to manage your holdings."
     }
   },
   "options": {
@@ -26,8 +19,7 @@
           "buy_shares_symbol": "Buy more shares",
           "sell_shares_symbol": "Sell shares",
           "edit_holding_symbol": "Edit shares / cost basis",
-          "remove_holding": "Remove a stock",
-          "update_settings": "Update schedule"
+          "remove_holding": "Remove a stock"
         }
       },
       "add_holding": {
@@ -76,14 +68,6 @@
       "remove_holding": {
         "title": "Remove a stock",
         "data": { "symbol": "Symbol" }
-      },
-      "update_settings": {
-        "title": "Update schedule",
-        "description": "How often to poll Yahoo Finance for this portfolio.",
-        "data": {
-          "update_interval_minutes": "Minutes between updates while a market is open",
-          "idle_interval_minutes": "Minutes between updates outside market hours"
-        }
       }
     },
     "abort": {
@@ -91,13 +75,8 @@
     },
     "error": {
       "already_exists": "That symbol is already in your portfolio. Use 'Buy more shares' instead.",
-      "invalid_shares": "You can't sell more shares than you own."
-    }
-  },
-  "issues": {
-    "symbol_fetch_failing": {
-      "title": "{symbol} price updates are failing ({portfolio})",
-      "description": "Home Assistant hasn't been able to fetch a price for {symbol} in the '{portfolio}' portfolio for several update cycles in a row. This usually means Yahoo Finance is rate-limiting requests, the symbol is wrong or delisted, or there's a network issue. Check the symbol under Configure, or wait a while if this looks like a temporary outage."
+      "invalid_shares": "You can't sell more shares than you own.",
+      "invalid_symbol": "Enter a valid ticker symbol."
     }
   }
 }

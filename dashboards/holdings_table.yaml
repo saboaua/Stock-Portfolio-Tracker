@@ -1,15 +1,11 @@
-# NOTE (v2.0): entity IDs below assume a portfolio named "Main"
-# (sensor.investing_main_...). Replace "main" with your own portfolio's
-# name (lowercased) if you named it something else.
-#
-# No changes needed - the integration's sensor.investing_main_holdings_table
+# No changes needed - the integration's sensor.portfolio_holdings_table
 # exposes a `rows` attribute with the exact same shape the old template
 # sensor produced, so this card works as-is against the new integration.
 type: custom:flex-table-card
 title: Holdings
 strict: true
 entities:
-  include: sensor.investing_main_holdings_table
+  include: sensor.portfolio_holdings_table
 columns:
   - name: Symbol
     data: rows.symbol

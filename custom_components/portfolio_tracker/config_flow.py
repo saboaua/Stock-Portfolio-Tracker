@@ -1,9 +1,7 @@
 """Config flow for Portfolio Tracker.
 
-Each config entry is one portfolio. Adding a second portfolio is just
-Add Integration again with a different name. Ongoing management (adding a
-stock, buying/selling, editing cost basis, removing a stock, and update
-schedule) happens through each entry's own "Configure" (options) flow.
+Initial setup creates an empty portfolio. Day-to-day management (add, buy,
+sell, edit, remove) is done through the integration's Configure options flow.
 """
 from __future__ import annotations
 
@@ -14,61 +12,48 @@ import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.core import callback
+from homeassistant.helpers import config_validation as cv
 
 from .const import (
     DOMAIN,
-    CONF_NAME,
     CONF_HOLDINGS,
     CONF_SYMBOL,
     CONF_SHARES,
     CONF_INVESTED,
     CONF_ENTRY_DATE,
-    CONF_UPDATE_INTERVAL,
-    CONF_IDLE_INTERVAL,
-    DEFAULT_SCAN_INTERVAL_MINUTES,
-    DEFAULT_IDLE_INTERVAL_MINUTES,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class PortfolioTrackerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """Set up one portfolio. Run this again to add another portfolio."""
+    """One-time setup. Only a single Portfolio Tracker instance is supported."""
 
-    VERSION = 2
+    VERSION = 1
 
     async def async_step_user(self, user_input=None):
-        errors = {}
-        if user_input is not None:
-            name = user_input[CONF_NAME].strip()
-            existing_names = {
-                e.data.get(CONF_NAME, "").lower() for e in self._async_current_entries()
-            }
-            if not name:
-                errors["base"] = "name_required"
-            elif name.lower() in existing_names:
-                errors["base"] = "name_exists"
-            else:
-                return self.async_create_entry(
-                    title=f"Investing {name}",
-                    data={CONF_NAME: name},
-                    options={CONF_HOLDINGS: {}},
-                )
+        if self._async_current_entries():
+            return self.async_abort(reason="single_instance_allowed")
 
-        schema = vol.Schema({vol.Required(CONF_NAME, default="Main"): str})
-        return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
+        if user_input is not None:
+            return self.async_create_entry(
+                title="Portfolio Tracker",
+                data={},
+                options={CONF_HOLDINGS: {}},
+            )
+
+        return self.async_show_form(step_id="user")
 
     @staticmethod
     @callback
     def async_get_options_flow(config_entry):
-        return PortfolioTrackerOptionsFlow(config_entry)
+        return PortfolioTrackerOptionsFlowHandler()
 
 
-class PortfolioTrackerOptionsFlow(config_entries.OptionsFlow):
-    """Add stocks, log buys/sells, edit or remove holdings, tune polling."""
+class PortfolioTrackerOptionsFlowHandler(config_entries.OptionsFlow):
+    """Add stocks, log buys/sells, edit or remove holdings — all from the UI."""
 
-    def __init__(self, config_entry):
-        self.config_entry = config_entry
+    def __init__(self) -> None:
         self._pending_symbol: str | None = None
 
     @property
@@ -91,7 +76,6 @@ class PortfolioTrackerOptionsFlow(config_entries.OptionsFlow):
                 "sell_shares_symbol",
                 "edit_holding_symbol",
                 "remove_holding",
-                "update_settings",
             ],
         )
 
@@ -102,12 +86,14 @@ class PortfolioTrackerOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             symbol = user_input[CONF_SYMBOL].strip().upper()
             holdings = self._holdings
-            if symbol in holdings:
+            if not symbol:
+                errors["base"] = "invalid_symbol"
+            elif symbol in holdings:
                 errors["base"] = "already_exists"
             else:
                 holdings[symbol] = {
-                    CONF_SHARES: user_input[CONF_SHARES],
-                    CONF_INVESTED: user_input[CONF_INVESTED],
+                    CONF_SHARES: float(user_input[CONF_SHARES]),
+                    CONF_INVESTED: float(user_input[CONF_INVESTED]),
                     CONF_ENTRY_DATE: user_input.get(CONF_ENTRY_DATE) or str(date.today()),
                 }
                 return await self._save(holdings)
@@ -120,7 +106,9 @@ class PortfolioTrackerOptionsFlow(config_entries.OptionsFlow):
                 vol.Optional(CONF_ENTRY_DATE, default=str(date.today())): str,
             }
         )
-        return self.async_show_form(step_id="add_holding", data_schema=schema, errors=errors)
+        return self.async_show_form(
+            step_id="add_holding", data_schema=schema, errors=errors
+        )
 
     # ---------------------------------------------------------------- buy
 
@@ -131,7 +119,9 @@ class PortfolioTrackerOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             self._pending_symbol = user_input[CONF_SYMBOL]
             return await self.async_step_buy_shares_amount()
-        schema = vol.Schema({vol.Required(CONF_SYMBOL): vol.In(sorted(holdings.keys()))})
+        schema = vol.Schema(
+            {vol.Required(CONF_SYMBOL): vol.In(sorted(holdings.keys()))}
+        )
         return self.async_show_form(step_id="buy_shares_symbol", data_schema=schema)
 
     async def async_step_buy_shares_amount(self, user_input=None):
@@ -139,10 +129,15 @@ class PortfolioTrackerOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             holdings = self._holdings
             h = holdings[symbol]
-            h[CONF_SHARES] = round(float(h[CONF_SHARES]) + float(user_input["shares"]), 6)
-            h[CONF_INVESTED] = round(float(h[CONF_INVESTED]) + float(user_input["cost"]), 2)
+            h[CONF_SHARES] = round(
+                float(h[CONF_SHARES]) + float(user_input["shares"]), 6
+            )
+            h[CONF_INVESTED] = round(
+                float(h[CONF_INVESTED]) + float(user_input["cost"]), 2
+            )
             holdings[symbol] = h
             return await self._save(holdings)
+
         schema = vol.Schema(
             {
                 vol.Required("shares"): vol.Coerce(float),
@@ -164,7 +159,9 @@ class PortfolioTrackerOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             self._pending_symbol = user_input[CONF_SYMBOL]
             return await self.async_step_sell_shares_amount()
-        schema = vol.Schema({vol.Required(CONF_SYMBOL): vol.In(sorted(holdings.keys()))})
+        schema = vol.Schema(
+            {vol.Required(CONF_SYMBOL): vol.In(sorted(holdings.keys()))}
+        )
         return self.async_show_form(step_id="sell_shares_symbol", data_schema=schema)
 
     async def async_step_sell_shares_amount(self, user_input=None):
@@ -181,7 +178,9 @@ class PortfolioTrackerOptionsFlow(config_entries.OptionsFlow):
             else:
                 avg_cost = float(h[CONF_INVESTED]) / cur_shares if cur_shares else 0
                 h[CONF_SHARES] = round(cur_shares - sell_shares, 6)
-                h[CONF_INVESTED] = round(float(h[CONF_INVESTED]) - (avg_cost * sell_shares), 2)
+                h[CONF_INVESTED] = round(
+                    float(h[CONF_INVESTED]) - (avg_cost * sell_shares), 2
+                )
                 if h[CONF_SHARES] <= 0:
                     holdings.pop(symbol, None)
                 else:
@@ -213,7 +212,9 @@ class PortfolioTrackerOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             self._pending_symbol = user_input[CONF_SYMBOL]
             return await self.async_step_edit_holding_values()
-        schema = vol.Schema({vol.Required(CONF_SYMBOL): vol.In(sorted(holdings.keys()))})
+        schema = vol.Schema(
+            {vol.Required(CONF_SYMBOL): vol.In(sorted(holdings.keys()))}
+        )
         return self.async_show_form(step_id="edit_holding_symbol", data_schema=schema)
 
     async def async_step_edit_holding_values(self, user_input=None):
@@ -232,7 +233,9 @@ class PortfolioTrackerOptionsFlow(config_entries.OptionsFlow):
         schema = vol.Schema(
             {
                 vol.Required("shares", default=h.get(CONF_SHARES, 0)): vol.Coerce(float),
-                vol.Required("invested", default=h.get(CONF_INVESTED, 0)): vol.Coerce(float),
+                vol.Required("invested", default=h.get(CONF_INVESTED, 0)): vol.Coerce(
+                    float
+                ),
                 vol.Optional(
                     CONF_ENTRY_DATE, default=h.get(CONF_ENTRY_DATE, str(date.today()))
                 ): str,
@@ -253,33 +256,7 @@ class PortfolioTrackerOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             holdings.pop(user_input[CONF_SYMBOL], None)
             return await self._save(holdings)
-        schema = vol.Schema({vol.Required(CONF_SYMBOL): vol.In(sorted(holdings.keys()))})
-        return self.async_show_form(step_id="remove_holding", data_schema=schema)
-
-    # ------------------------------------------------------ update settings
-
-    async def async_step_update_settings(self, user_input=None):
-        current_fast = self.config_entry.options.get(
-            CONF_UPDATE_INTERVAL, DEFAULT_SCAN_INTERVAL_MINUTES
-        )
-        current_idle = self.config_entry.options.get(
-            CONF_IDLE_INTERVAL, DEFAULT_IDLE_INTERVAL_MINUTES
-        )
-
-        if user_input is not None:
-            new_options = dict(self.config_entry.options)
-            new_options[CONF_UPDATE_INTERVAL] = int(user_input[CONF_UPDATE_INTERVAL])
-            new_options[CONF_IDLE_INTERVAL] = int(user_input[CONF_IDLE_INTERVAL])
-            return self.async_create_entry(title="", data=new_options)
-
         schema = vol.Schema(
-            {
-                vol.Required(CONF_UPDATE_INTERVAL, default=current_fast): vol.All(
-                    vol.Coerce(int), vol.Range(min=1, max=120)
-                ),
-                vol.Required(CONF_IDLE_INTERVAL, default=current_idle): vol.All(
-                    vol.Coerce(int), vol.Range(min=1, max=360)
-                ),
-            }
+            {vol.Required(CONF_SYMBOL): vol.In(sorted(holdings.keys()))}
         )
-        return self.async_show_form(step_id="update_settings", data_schema=schema)
+        return self.async_show_form(step_id="remove_holding", data_schema=schema)
