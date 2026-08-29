@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.4.5 — 2026-08-29
+
+### Fixed
+- **$0.00 / empty portfolio data** — more reliable Yahoo chart fetch (browser User-Agent, 5d/1mo fallback, no whole-update failure on single-symbol errors)
+- Holding sensors stay available when holdings exist (show last data instead of blanking the dashboard)
+- FX rate never applied as 0
+- HACS detail page content — README synced with modern `info.md` (HACS uses README when `render_readme: true`)
+
+### Notes
+- Multi-portfolio support planned for a following release
+
 ## 1.4.4 — 2026-08-29
 
 ### Added

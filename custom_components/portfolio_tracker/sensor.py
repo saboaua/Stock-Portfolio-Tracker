@@ -86,7 +86,9 @@ class _BaseHoldingSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def available(self) -> bool:
-        return super().available and bool(self._holding)
+        # Keep entity available when the holding exists, even if the last poll
+        # failed — dashboards can still show last known / zero rather than "Unavailable".
+        return bool(self._holding)
 
 
 class PortfolioPriceSensor(_BaseHoldingSensor):

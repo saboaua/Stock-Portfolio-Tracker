@@ -74,9 +74,15 @@ Most people install several stock components just to see price, P/L, and a chart
 ```yaml
 type: custom:portfolio-tracker-card
 title: My Portfolio
-view: charts    # summary | charts | holdings
-range: 1W       # 1W | 1M
+view: charts
+range: 1W
 ```
+
+| `view` | Description |
+|--------|-------------|
+| `summary` | Totals, unrealized / day P/L, market pills |
+| `charts` | Ticker grid with price, % change, sparklines |
+| `holdings` | Shares, avg cost, invested, market value, gain |
 
 ---
 
@@ -89,4 +95,4 @@ range: 1W       # 1W | 1M
 
 **Docs:** [github.com/saboaua/Stock-Portfolio-Tracker](https://github.com/saboaua/Stock-Portfolio-Tracker)
 
-**Version:** 1.4.4
+**Version:** 1.4.5

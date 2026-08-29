@@ -9,7 +9,14 @@ import aiohttp
 _LOGGER = logging.getLogger(__name__)
 
 PAIR_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{pair}"
-HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; HomeAssistant-PortfolioTracker/1.4)"}
+HEADERS = {
+    "User-Agent": (
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/120.0.0.0 Safari/537.36"
+    ),
+    "Accept": "application/json",
+}
 
 
 def yahoo_pair(from_ccy: str, to_ccy: str) -> str:
@@ -39,7 +46,6 @@ async def fetch_rate(
             timeout=aiohttp.ClientTimeout(total=12),
         ) as resp:
             if resp.status != 200:
-                # Try inverse pair
                 inv = yahoo_pair(to_ccy, from_ccy)
                 async with session.get(
                     PAIR_URL.format(pair=inv),
@@ -48,7 +54,9 @@ async def fetch_rate(
                     timeout=aiohttp.ClientTimeout(total=12),
                 ) as resp2:
                     if resp2.status != 200:
-                        _LOGGER.warning("FX HTTP %s for %s / inv %s", resp.status, pair, inv)
+                        _LOGGER.warning(
+                            "FX HTTP %s for %s / inv %s", resp.status, pair, inv
+                        )
                         return None
                     payload = await resp2.json(content_type=None)
                     rate = _parse_price(payload)
@@ -82,7 +90,7 @@ async def build_rate_table(
         if ccy in rates:
             continue
         rate = await fetch_rate(session, ccy, base)
-        if rate is not None:
+        if rate is not None and rate > 0:
             rates[ccy] = rate
         else:
             _LOGGER.warning("No FX rate for %s→%s; using 1.0", ccy, base)

@@ -1,61 +1,68 @@
 <p align="center">
-  <img src="logo.png" alt="Portfolio Tracker" width="420">
-</p>
-
-<h1 align="center">Portfolio Tracker</h1>
-
-<p align="center">
-  <strong>Stock, ETF &amp; crypto portfolio tracking for Home Assistant</strong><br>
-  UI-managed holdings · Yahoo Finance · multi-currency FX · dividends · Lovelace card
+  <img src="https://raw.githubusercontent.com/saboaua/Stock-Portfolio-Tracker/main/brand/logo.png" alt="Portfolio Tracker" width="420">
 </p>
 
 <p align="center">
-  <img alt="Version" src="https://img.shields.io/badge/version-1.4.4-blue?style=flat-square">
-  <img alt="HACS" src="https://img.shields.io/badge/HACS-Custom-orange?style=flat-square">
-  <img alt="HA" src="https://img.shields.io/badge/Home%20Assistant-2024.6+-41BDF5?style=flat-square">
+  <strong>One integration for hobby investors</strong><br>
+  Stocks · ETFs · Crypto — live prices, FX, charts, and holdings in Home Assistant
 </p>
 
 <p align="center">
-  <a href="https://github.com/saboaua/Stock-Portfolio-Tracker">GitHub</a> ·
-  <a href="https://github.com/saboaua/Stock-Portfolio-Tracker/issues">Issues</a>
+  <a href="https://github.com/saboaua/Stock-Portfolio-Tracker/releases"><img src="https://img.shields.io/github/v/release/saboaua/Stock-Portfolio-Tracker?style=flat-square&label=release" alt="Release"></a>
+  <img src="https://img.shields.io/badge/HACS-Custom-orange?style=flat-square" alt="HACS">
+  <img src="https://img.shields.io/badge/HA-2024.6+-41BDF5?style=flat-square" alt="Home Assistant">
+  <a href="https://github.com/saboaua/Stock-Portfolio-Tracker/issues"><img src="https://img.shields.io/github/issues/saboaua/Stock-Portfolio-Tracker?style=flat-square" alt="Issues"></a>
 </p>
 
 ---
 
-## Highlights
+### Why this integration
 
-- **Configure menu with icons** — add / buy / sell / edit / remove / settings  
-- **Yahoo Finance** prices (no API key, no `yfinance`)  
-- **Multi-currency FX** — pick a base currency; totals convert via Yahoo FX pairs  
-- **Dividend calendar** — `calendar.portfolio_dividends` from Yahoo dividend events  
-- **Native Lovelace card** — `custom:portfolio-tracker-card`  
-- **Realized P/L** + trade log on sells  
-- **US & EU market** open/session sensors  
+Most people install several stock components just to see price, P/L, and a chart.  
+**Portfolio Tracker** keeps it in one place: manage positions in the UI, pull Yahoo Finance data (no API key), convert currencies, watch market hours, and use a built-in Lovelace card.
 
 ---
 
-## Sensors & entities
+### Features
 
-| Entity | Description |
-|--------|-------------|
-| `sensor.<symbol>_price` | Live price + 52w, volume, name |
-| `sensor.<symbol>_position_value` | Value, gain, **allocation %** |
-| `sensor.portfolio_total_value` | Total in **base currency** |
+| | |
+|:--|:--|
+| **Configure UI** | Add · buy · sell · edit · remove holdings — no YAML for day-to-day trades |
+| **Yahoo Finance** | Live prices without tokens or `yfinance` |
+| **Multi-currency FX** | Pick a base currency; foreign tickers convert automatically |
+| **Native card** | `summary` · `charts` (sparklines) · `holdings` |
+| **Refresh button** | Force an update anytime (`button.portfolio_refresh`) |
+| **Last update** | Know when data last succeeded (`sensor.portfolio_last_update`) |
+| **Error alerts** | Persistent notification if Yahoo refreshes keep failing |
+| **Dividends** | `calendar.portfolio_dividends` |
+| **Realized P/L** | Tracked on sells with a short trade log |
+| **Market sessions** | US & EU open/closed sensors + schedules |
+| **Crypto** | Same form as stocks — e.g. `BTC-USD`, `ETH-USD` |
+
+---
+
+### Entities (overview)
+
+| Entity | Role |
+|--------|------|
+| `sensor.<symbol>_price` | Live price + 52w / volume / name |
+| `sensor.<symbol>_position_value` | Value, shares, gain, allocation % |
+| `sensor.portfolio_total_value` | Portfolio in base currency |
 | `sensor.portfolio_total_invested` | Cost basis |
 | `sensor.portfolio_total_gain` | Unrealized P/L |
 | `sensor.portfolio_day_change` | Day P/L |
-| `sensor.portfolio_realized_gain` | Realized P/L + recent trades |
+| `sensor.portfolio_realized_gain` | Realized + recent trades |
 | `sensor.portfolio_holdings_count` | Open positions |
-| `sensor.portfolio_holdings_table` | Rows for flex-table-card |
+| `sensor.portfolio_holdings_table` | Rows for tables / card |
+| `sensor.portfolio_last_update` | Last successful refresh |
+| `button.portfolio_refresh` | Manual Yahoo refresh |
 | `binary_sensor.us_market_open` / `eu_market_open` | Session flags |
-| `sensor.us_market_session` / `eu_market_session` | `open`/`closed` + times |
+| `sensor.us_market_session` / `eu_market_session` | open/closed + times |
 | `calendar.portfolio_dividends` | Dividend events |
 
 ---
 
-## Native Lovelace card
-
-After install + restart, add a resource:
+### Lovelace card
 
 **Settings → Dashboards → ⋮ → Resources → Add**
 
@@ -67,65 +74,25 @@ After install + restart, add a resource:
 ```yaml
 type: custom:portfolio-tracker-card
 title: My Portfolio
-view: charts    # summary | charts | holdings
-range: 1W       # 1W | 1M  (charts view sparklines)
+view: charts
+range: 1W
 ```
 
-| `view` | What you see |
-|--------|----------------|
-| `summary` | Total value, unrealized / day P/L, market pills |
-| `charts` | Grid of tickers with price, % change, and sparkline (like a watchlist) |
-| `holdings` | Shares, avg cost, invested, market value, gain for every position |
-
-Tabs on the card switch views without editing YAML.
-
-### Adding crypto
-
-Use Yahoo Finance symbols when you **Add a new stock** (same form as equities):
-
-| Asset | Symbol |
-|-------|--------|
-| Bitcoin | `BTC-USD` |
-| Ethereum | `ETH-USD` |
-| Solana | `SOL-USD` |
-
-Configure → **Add a new stock** → enter `BTC-USD`, units, and total cost basis.
+| `view` | Description |
+|--------|-------------|
+| `summary` | Totals, unrealized / day P/L, market pills |
+| `charts` | Ticker grid with price, % change, sparklines |
+| `holdings` | Shares, avg cost, invested, market value, gain |
 
 ---
 
-## Frontend cards (designed dashboard YAML)
+### Quick start
 
-From **HACS → Frontend**:
+1. HACS → custom repository → install → **restart HA**  
+2. **Settings → Devices & Services → Add Integration → Portfolio Tracker**  
+3. **Configure** → add symbols (e.g. `NVDA`, `VUAA.L`, `BTC-USD`)  
+4. Optional: add the card resource above  
 
-| Required | Optional |
-|----------|----------|
-| button-card | layout-card |
-| auto-entities | vertical-stack-in-card |
-| flex-table-card | mini-graph-card |
-| card-mod | |
-| Mushroom | |
+**Docs:** [github.com/saboaua/Stock-Portfolio-Tracker](https://github.com/saboaua/Stock-Portfolio-Tracker)
 
-Templates live in `dashboards/`.
-
----
-
-## Install (HACS custom repository)
-
-1. HACS → Integrations → ⋮ → Custom repositories  
-2. `https://github.com/saboaua/Stock-Portfolio-Tracker` · **Integration**  
-3. Download → **Restart Home Assistant**  
-4. Settings → Devices & Services → Add Integration → Portfolio Tracker  
-
-**Docs / help (?):** [github.com/saboaua/Stock-Portfolio-Tracker](https://github.com/saboaua/Stock-Portfolio-Tracker)
-
-Configure → **Settings** to set **base currency** and poll intervals.
-
-### HACS list icon
-
-HA Devices & Services shows `brand/icon.png`. The HACS *Downloaded* list may still show “Icon not available” for custom repos (HACS limitation).
-
----
-
-## Version updates
-
-Bump is in `manifest.json` → `version` (**1.4.4**). Publish a GitHub Release so HACS offers the update, then restart HA.
+**Version:** 1.4.5
