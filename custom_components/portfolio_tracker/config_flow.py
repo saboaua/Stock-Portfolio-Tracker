@@ -1,9 +1,9 @@
 """Config flow for Portfolio Tracker.
 
-The initial setup step just creates an empty portfolio. All ongoing
-management (adding a stock, buying more shares, selling shares, editing
-cost basis, removing a stock) happens through the integration's
-"Configure" (options) flow, reachable from Settings > Devices & Services.
+Each config entry is one portfolio. Adding a second portfolio is just
+Add Integration again with a different name. Ongoing management (adding a
+stock, buying/selling, editing cost basis, removing a stock, and update
+schedule) happens through each entry's own "Configure" (options) flow.
 """
 from __future__ import annotations
 
@@ -17,33 +17,46 @@ from homeassistant.core import callback
 
 from .const import (
     DOMAIN,
+    CONF_NAME,
     CONF_HOLDINGS,
     CONF_SYMBOL,
     CONF_SHARES,
     CONF_INVESTED,
     CONF_ENTRY_DATE,
+    CONF_UPDATE_INTERVAL,
+    CONF_IDLE_INTERVAL,
+    DEFAULT_SCAN_INTERVAL_MINUTES,
+    DEFAULT_IDLE_INTERVAL_MINUTES,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
 
 class PortfolioTrackerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """One-time setup. Only a single Portfolio Tracker instance is supported."""
+    """Set up one portfolio. Run this again to add another portfolio."""
 
-    VERSION = 1
+    VERSION = 2
 
     async def async_step_user(self, user_input=None):
-        if self._async_current_entries():
-            return self.async_abort(reason="single_instance_allowed")
-
+        errors = {}
         if user_input is not None:
-            return self.async_create_entry(
-                title="Portfolio Tracker",
-                data={},
-                options={CONF_HOLDINGS: {}},
-            )
+            name = user_input[CONF_NAME].strip()
+            existing_names = {
+                e.data.get(CONF_NAME, "").lower() for e in self._async_current_entries()
+            }
+            if not name:
+                errors["base"] = "name_required"
+            elif name.lower() in existing_names:
+                errors["base"] = "name_exists"
+            else:
+                return self.async_create_entry(
+                    title=f"Investing {name}",
+                    data={CONF_NAME: name},
+                    options={CONF_HOLDINGS: {}},
+                )
 
-        return self.async_show_form(step_id="user")
+        schema = vol.Schema({vol.Required(CONF_NAME, default="Main"): str})
+        return self.async_show_form(step_id="user", data_schema=schema, errors=errors)
 
     @staticmethod
     @callback
@@ -52,7 +65,7 @@ class PortfolioTrackerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class PortfolioTrackerOptionsFlow(config_entries.OptionsFlow):
-    """Add stocks, log buys/sells, edit or remove holdings — all from the UI."""
+    """Add stocks, log buys/sells, edit or remove holdings, tune polling."""
 
     def __init__(self, config_entry):
         self.config_entry = config_entry
@@ -78,6 +91,7 @@ class PortfolioTrackerOptionsFlow(config_entries.OptionsFlow):
                 "sell_shares_symbol",
                 "edit_holding_symbol",
                 "remove_holding",
+                "update_settings",
             ],
         )
 
@@ -129,7 +143,6 @@ class PortfolioTrackerOptionsFlow(config_entries.OptionsFlow):
             h[CONF_INVESTED] = round(float(h[CONF_INVESTED]) + float(user_input["cost"]), 2)
             holdings[symbol] = h
             return await self._save(holdings)
-
         schema = vol.Schema(
             {
                 vol.Required("shares"): vol.Coerce(float),
@@ -242,3 +255,31 @@ class PortfolioTrackerOptionsFlow(config_entries.OptionsFlow):
             return await self._save(holdings)
         schema = vol.Schema({vol.Required(CONF_SYMBOL): vol.In(sorted(holdings.keys()))})
         return self.async_show_form(step_id="remove_holding", data_schema=schema)
+
+    # ------------------------------------------------------ update settings
+
+    async def async_step_update_settings(self, user_input=None):
+        current_fast = self.config_entry.options.get(
+            CONF_UPDATE_INTERVAL, DEFAULT_SCAN_INTERVAL_MINUTES
+        )
+        current_idle = self.config_entry.options.get(
+            CONF_IDLE_INTERVAL, DEFAULT_IDLE_INTERVAL_MINUTES
+        )
+
+        if user_input is not None:
+            new_options = dict(self.config_entry.options)
+            new_options[CONF_UPDATE_INTERVAL] = int(user_input[CONF_UPDATE_INTERVAL])
+            new_options[CONF_IDLE_INTERVAL] = int(user_input[CONF_IDLE_INTERVAL])
+            return self.async_create_entry(title="", data=new_options)
+
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_UPDATE_INTERVAL, default=current_fast): vol.All(
+                    vol.Coerce(int), vol.Range(min=1, max=120)
+                ),
+                vol.Required(CONF_IDLE_INTERVAL, default=current_idle): vol.All(
+                    vol.Coerce(int), vol.Range(min=1, max=360)
+                ),
+            }
+        )
+        return self.async_show_form(step_id="update_settings", data_schema=schema)

@@ -1,3 +1,7 @@
+# NOTE (v2.0): entity IDs below assume a portfolio named "Main"
+# (sensor.investing_main_...). Replace "main" with your own portfolio's
+# name (lowercased) if you named it something else.
+#
 # Requires from HACS (Frontend): button-card, vertical-stack-in-card,
 # mushroom, card_mod - all already used elsewhere in this dashboard set,
 # so there's nothing new to install.
@@ -27,7 +31,7 @@ cards:
         .title { font-size: 20px !important; font-weight: 800 !important; }
 
   - type: custom:button-card
-    entity: sensor.portfolio_total_value
+    entity: sensor.investing_main_total_value
     triggers_update: all
     show_name: false
     show_icon: false

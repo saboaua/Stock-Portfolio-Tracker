@@ -1,3 +1,7 @@
+# NOTE (v2.0): entity IDs below assume a portfolio named "Main"
+# (sensor.investing_main_...). Replace "main" with your own portfolio's
+# name (lowercased) if you named it something else.
+#
 # Requires from HACS (Frontend): auto-entities, button-card, mini-graph-card,
 # layout-card, vertical-stack-in-card, card_mod, mushroom (mushroom-title-card)
 #
@@ -40,23 +44,23 @@ cards:
               box-sizing: border-box !important;
             }
         triggers_update:
-          - sensor.portfolio_total_value
-          - sensor.portfolio_total_gain
-          - sensor.portfolio_day_change
-          - sensor.portfolio_total_invested
-        entity: sensor.portfolio_total_value
+          - sensor.investing_main_total_value
+          - sensor.investing_main_total_gain
+          - sensor.investing_main_day_change
+          - sensor.investing_main_total_invested
+        entity: sensor.investing_main_total_value
         show_icon: false
         show_name: false
         show_label: true
         show_state: false
         label: |
           [[[
-            const totalValue    = parseFloat(states['sensor.portfolio_total_value']?.state) || 0;
-            const unrealized    = parseFloat(states['sensor.portfolio_total_gain']?.state) || 0;
-            const unrealizedPct = parseFloat(states['sensor.portfolio_total_gain']?.attributes?.gain_pct) || 0;
-            const dayChange     = parseFloat(states['sensor.portfolio_day_change']?.state) || 0;
-            const dayChangePct  = parseFloat(states['sensor.portfolio_day_change']?.attributes?.gain_pct) || 0;
-            const cost          = parseFloat(states['sensor.portfolio_total_invested']?.state) || 0;
+            const totalValue    = parseFloat(states['sensor.investing_main_total_value']?.state) || 0;
+            const unrealized    = parseFloat(states['sensor.investing_main_total_gain']?.state) || 0;
+            const unrealizedPct = parseFloat(states['sensor.investing_main_total_gain']?.attributes?.gain_pct) || 0;
+            const dayChange     = parseFloat(states['sensor.investing_main_day_change']?.state) || 0;
+            const dayChangePct  = parseFloat(states['sensor.investing_main_day_change']?.attributes?.gain_pct) || 0;
+            const cost          = parseFloat(states['sensor.investing_main_total_invested']?.state) || 0;
 
             const unUp  = unrealized >= 0;
             const dayUp = dayChange >= 0;
@@ -146,12 +150,12 @@ cards:
           - type: conditional
             conditions:
               - condition: numeric_state
-                entity: sensor.portfolio_total_gain
+                entity: sensor.investing_main_total_gain
                 above: -0.01
             card:
               type: custom:mini-graph-card
               entities:
-                - entity: sensor.portfolio_total_value
+                - entity: sensor.investing_main_total_value
                   color: '#059669'
               hours_to_show: 24
               points_per_hour: 0.5
@@ -188,12 +192,12 @@ cards:
           - type: conditional
             conditions:
               - condition: numeric_state
-                entity: sensor.portfolio_total_gain
+                entity: sensor.investing_main_total_gain
                 below: 0
             card:
               type: custom:mini-graph-card
               entities:
-                - entity: sensor.portfolio_total_value
+                - entity: sensor.investing_main_total_value
                   color: '#dc2626'
               hours_to_show: 24
               points_per_hour: 0.5
@@ -299,7 +303,7 @@ cards:
                 const val = parseFloat(s ? s.state : 0) || 0;
                 const gain = parseFloat(s?.attributes?.gain) || 0;
                 const gainPct = parseFloat(s?.attributes?.gain_pct) || 0;
-                const totalVal = parseFloat(states['sensor.portfolio_total_value']?.state) || 1;
+                const totalVal = parseFloat(states['sensor.investing_main_total_value']?.state) || 1;
                 const allocPct = Math.min(100, (val / totalVal) * 100);
                 const up = gain >= 0;
                 const sign = up ? '+' : '';
@@ -328,7 +332,7 @@ cards:
                 `;
               ]]]
       exclude:
-        - entity_id: sensor.portfolio_total_value
+        - entity_id: sensor.investing_main_total_value
     sort:
       method: attribute
       attribute: symbol

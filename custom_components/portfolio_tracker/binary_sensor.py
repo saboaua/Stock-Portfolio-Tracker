@@ -9,20 +9,10 @@ from homeassistant.components.binary_sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.event import async_track_time_interval
 
 from . import market_hours
-from .const import DOMAIN
-
-
-def _device_info(entry: ConfigEntry) -> DeviceInfo:
-    return DeviceInfo(
-        identifiers={(DOMAIN, entry.entry_id)},
-        name="Portfolio Tracker",
-        manufacturer="Custom",
-        model="Portfolio Tracker",
-    )
+from .device import device_info as _device_info
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities):
@@ -56,8 +46,13 @@ class MarketOpenSensor(BinarySensorEntity):
     Computed from the exchange's own timezone (DST-aware via zoneinfo), so
     it's correct no matter what timezone Home Assistant or the person
     viewing the dashboard is in. Does not account for market holidays.
+
+    Created once per portfolio entry (so each "Investing {name}" device
+    has its own copy) - a small redundancy if you run multiple portfolios,
+    traded for simplicity of not needing a cross-entry shared entity.
     """
 
+    _attr_has_entity_name = True
     _attr_device_class = BinarySensorDeviceClass.RUNNING
     _attr_should_poll = False
 

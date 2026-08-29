@@ -11,11 +11,11 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import DOMAIN, CONF_HOLDINGS, CONF_SHARES, CONF_INVESTED, CONF_ENTRY_DATE
 from .coordinator import PortfolioDataCoordinator
+from .device import device_info as _device_info
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -40,17 +40,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     async_add_entities(entities)
 
 
-def _device_info(entry: ConfigEntry) -> DeviceInfo:
-    return DeviceInfo(
-        identifiers={(DOMAIN, entry.entry_id)},
-        name="Portfolio Tracker",
-        manufacturer="Custom",
-        model="Portfolio Tracker",
-    )
-
-
 class _BaseHoldingSensor(CoordinatorEntity, SensorEntity):
     """Base for sensors tied to one specific holding/symbol."""
+
+    _attr_has_entity_name = True
 
     def __init__(self, coordinator, entry, symbol):
         super().__init__(coordinator)
@@ -163,6 +156,7 @@ class PortfolioPositionSensor(_BaseHoldingSensor):
 class _BaseTotalSensor(CoordinatorEntity, SensorEntity):
     """Base for sensors that aggregate across the whole portfolio."""
 
+    _attr_has_entity_name = True
     _attr_device_class = SensorDeviceClass.MONETARY
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = "USD"
@@ -197,7 +191,7 @@ class PortfolioTotalValueSensor(_BaseTotalSensor):
     def __init__(self, coordinator, entry):
         super().__init__(coordinator, entry)
         self._attr_unique_id = f"{entry.entry_id}_total_value"
-        self._attr_name = "Portfolio Total Value"
+        self._attr_name = "Total Value"
         self._attr_icon = "mdi:wallet"
 
     @property
@@ -216,7 +210,7 @@ class PortfolioTotalInvestedSensor(_BaseTotalSensor):
     def __init__(self, coordinator, entry):
         super().__init__(coordinator, entry)
         self._attr_unique_id = f"{entry.entry_id}_total_invested"
-        self._attr_name = "Portfolio Total Invested"
+        self._attr_name = "Total Invested"
         self._attr_icon = "mdi:piggy-bank"
 
     @property
@@ -230,7 +224,7 @@ class PortfolioTotalGainSensor(_BaseTotalSensor):
     def __init__(self, coordinator, entry):
         super().__init__(coordinator, entry)
         self._attr_unique_id = f"{entry.entry_id}_total_gain"
-        self._attr_name = "Portfolio Total Gain"
+        self._attr_name = "Total Gain"
         self._attr_icon = "mdi:trending-up"
 
     def _totals(self):
@@ -259,7 +253,7 @@ class PortfolioDayChangeSensor(_BaseTotalSensor):
     def __init__(self, coordinator, entry):
         super().__init__(coordinator, entry)
         self._attr_unique_id = f"{entry.entry_id}_day_change"
-        self._attr_name = "Portfolio Day Change"
+        self._attr_name = "Day Change"
         self._attr_icon = "mdi:chart-timeline-variant"
 
     @property
@@ -292,7 +286,7 @@ class PortfolioHoldingsTableSensor(_BaseTotalSensor):
     def __init__(self, coordinator, entry):
         super().__init__(coordinator, entry)
         self._attr_unique_id = f"{entry.entry_id}_holdings_table"
-        self._attr_name = "Portfolio Holdings Table"
+        self._attr_name = "Holdings Table"
         self._attr_icon = "mdi:table"
 
     @property

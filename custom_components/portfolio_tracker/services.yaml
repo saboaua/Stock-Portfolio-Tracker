@@ -1,8 +1,9 @@
 buy_shares:
   name: Buy shares
   description: >-
-    Add shares to a holding. If the symbol isn't in your portfolio yet, this
-    creates it. Great for wiring up a Lovelace form or an automation.
+    Add shares to a holding. If the symbol isn't in the portfolio yet, this
+    creates it. If you run multiple portfolios and the symbol could belong
+    to more than one, specify 'portfolio' to disambiguate.
   fields:
     symbol:
       name: Symbol
@@ -29,13 +30,23 @@ buy_shares:
           min: 0
           step: 0.01
           mode: box
+    portfolio:
+      name: Portfolio
+      description: >-
+        Portfolio name (as entered when the integration was added). Only
+        needed if you have more than one portfolio and the symbol exists
+        in more than one, or you're adding a brand-new symbol to a
+        specific portfolio while multiple are configured.
+      required: false
+      selector:
+        text:
 
 sell_shares:
   name: Sell shares
   description: >-
-    Remove shares from a holding. Invested capital is reduced proportionally
-    using the current average cost basis. Selling all shares removes the
-    holding.
+    Remove shares from a holding. Invested capital is reduced
+    proportionally using the current average cost basis. Selling all
+    shares removes the holding.
   fields:
     symbol:
       name: Symbol
@@ -53,3 +64,24 @@ sell_shares:
           min: 0
           step: 0.0001
           mode: box
+    portfolio:
+      name: Portfolio
+      description: Portfolio name, if the symbol exists in more than one.
+      required: false
+      selector:
+        text:
+
+refresh:
+  name: Refresh prices
+  description: >-
+    Force an immediate price refresh, bypassing the normal polling
+    schedule. Same as pressing a portfolio's "Refresh Prices" button.
+  fields:
+    portfolio:
+      name: Portfolio
+      description: >-
+        Portfolio name to refresh. Leave blank to refresh every configured
+        portfolio.
+      required: false
+      selector:
+        text:
