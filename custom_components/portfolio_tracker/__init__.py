@@ -230,11 +230,10 @@ def _register_services(hass: HomeAssistant) -> None:
     async def handle_refresh(call: ServiceCall) -> None:
         entry = _get_entry()
         if entry is None:
-            _LOGGER.error("Portfolio Tracker is not set up")
             return
         data = hass.data.get(DOMAIN, {}).get(entry.entry_id, {})
         coordinator = data.get("coordinator")
-        if coordinator:
+        if coordinator is not None:
             await coordinator.async_request_refresh()
 
     hass.services.async_register(DOMAIN, SERVICE_BUY, handle_buy, schema=BUY_SCHEMA)

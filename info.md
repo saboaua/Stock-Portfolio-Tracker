@@ -95,4 +95,4 @@ range: 1W
 
 **Docs:** [github.com/saboaua/Stock-Portfolio-Tracker](https://github.com/saboaua/Stock-Portfolio-Tracker)
 
-**Version:** 1.4.5
+**Version:** 1.4.5.1

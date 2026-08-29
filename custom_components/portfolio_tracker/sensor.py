@@ -86,9 +86,7 @@ class _BaseHoldingSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def available(self) -> bool:
-        # Keep entity available when the holding exists, even if the last poll
-        # failed — dashboards can still show last known / zero rather than "Unavailable".
-        return bool(self._holding)
+        return super().available and bool(self._holding)
 
 
 class PortfolioPriceSensor(_BaseHoldingSensor):
@@ -393,46 +391,6 @@ class PortfolioHoldingsCountSensor(_BaseTotalSensor):
         return {"symbols": sorted(self._holdings.keys())}
 
 
-class PortfolioLastUpdateSensor(CoordinatorEntity, SensorEntity):
-    """Timestamp of the last successful Yahoo Finance refresh."""
-
-    _attr_has_entity_name = False
-    _attr_name = "Portfolio Last Update"
-    _attr_icon = "mdi:clock-check-outline"
-    _attr_device_class = SensorDeviceClass.TIMESTAMP
-
-    def __init__(self, coordinator, entry):
-        super().__init__(coordinator)
-        self._entry = entry
-        self._attr_unique_id = f"{entry.entry_id}_last_update"
-        self._attr_device_info = _device_info(entry)
-        self.entity_id = "sensor.portfolio_last_update"
-
-    @property
-    def available(self) -> bool:
-        return self.coordinator is not None
-
-    @property
-    def native_value(self):
-        ts = getattr(self.coordinator, "last_success_time", None)
-        if ts is not None:
-            return ts
-        # Fall back to coordinator last_update_success_time if present
-        return getattr(self.coordinator, "last_update_success_time", None)
-
-    @property
-    def extra_state_attributes(self):
-        data = self.coordinator.data or {}
-        return {
-            "last_success": data.get("last_success"),
-            "failed_symbols": data.get("failed_symbols") or [],
-            "last_error": getattr(self.coordinator, "last_error", None),
-            "last_update_success": getattr(
-                self.coordinator, "last_update_success", None
-            ),
-        }
-
-
 class PortfolioRealizedGainSensor(_BaseTotalSensor):
     """Lifetimeulated realized P/L from completed sells."""
 
@@ -457,6 +415,41 @@ class PortfolioRealizedGainSensor(_BaseTotalSensor):
             "recent_trades": log[:10],
         }
 
+
+
+class PortfolioLastUpdateSensor(CoordinatorEntity, SensorEntity):
+    """Timestamp of the last successful Yahoo Finance refresh."""
+
+    _attr_has_entity_name = False
+    _attr_name = "Portfolio Last Update"
+    _attr_icon = "mdi:clock-check-outline"
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+
+    def __init__(self, coordinator, entry):
+        super().__init__(coordinator)
+        self._entry = entry
+        self._attr_unique_id = f"{entry.entry_id}_last_update"
+        self._attr_device_info = _device_info(entry)
+        self.entity_id = "sensor.portfolio_last_update"
+
+    @property
+    def available(self) -> bool:
+        return self.coordinator is not None
+
+    @property
+    def native_value(self):
+        ts = getattr(self.coordinator, "last_success_time", None)
+        if ts is not None:
+            return ts
+        return getattr(self.coordinator, "last_update_success_time", None)
+
+    @property
+    def extra_state_attributes(self):
+        data = self.coordinator.data or {}
+        return {
+            "last_error": getattr(self.coordinator, "last_error", None),
+            "last_update_success": getattr(self.coordinator, "last_update_success", None),
+        }
 
 class PortfolioHoldingsTableSensor(CoordinatorEntity, SensorEntity):
     """Feeds a custom:flex-table-card holdings table.

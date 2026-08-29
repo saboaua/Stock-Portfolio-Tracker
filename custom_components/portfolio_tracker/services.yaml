@@ -68,3 +68,4 @@ sell_shares:
 refresh:
   name: Refresh portfolio
   description: Force an immediate price refresh from Yahoo Finance for all holdings.
+
