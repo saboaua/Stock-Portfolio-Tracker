@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import date
+from datetime import date, datetime
 
 import voluptuous as vol
 
@@ -20,8 +20,11 @@ from .const import (
     CONF_ENTRY_DATE,
     CONF_SCAN_INTERVAL,
     CONF_IDLE_SCAN_INTERVAL,
+    CONF_REALIZED_GAIN,
+    CONF_TRADE_LOG,
     DEFAULT_SCAN_INTERVAL_MINUTES,
     IDLE_SCAN_INTERVAL_MINUTES,
+    MAX_TRADE_LOG,
     SERVICE_BUY,
     SERVICE_SELL,
 )
@@ -43,8 +46,15 @@ SELL_SCHEMA = vol.Schema(
     {
         vol.Required("symbol"): cv.string,
         vol.Required("shares"): vol.Coerce(float),
+        vol.Optional("proceeds"): vol.Coerce(float),
     }
 )
+
+
+def _append_trade(options: dict, trade: dict) -> None:
+    log = list(options.get(CONF_TRADE_LOG, []))
+    log.insert(0, trade)
+    options[CONF_TRADE_LOG] = log[:MAX_TRADE_LOG]
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -61,9 +71,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data[DOMAIN][entry.entry_id] = {"coordinator": coordinator, "entry": entry}
 
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
-
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-
     _register_services(hass)
 
     _LOGGER.info("Portfolio Tracker %s started", VERSION)
@@ -71,12 +79,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Reload the entry whenever holdings or options change."""
     await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Unload a config entry."""
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id, None)
@@ -88,7 +94,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 def _register_services(hass: HomeAssistant) -> None:
-    """Register buy_shares / sell_shares so automations & scripts can log trades."""
     if hass.services.has_service(DOMAIN, SERVICE_BUY):
         return
 
@@ -102,21 +107,29 @@ def _register_services(hass: HomeAssistant) -> None:
             _LOGGER.error("Portfolio Tracker is not set up")
             return
         symbol = call.data["symbol"].strip().upper()
+        shares = float(call.data["shares"])
+        cost = float(call.data["cost"])
         holdings = dict(entry.options.get(CONF_HOLDINGS, {}))
         h = holdings.get(
             symbol, {CONF_SHARES: 0, CONF_INVESTED: 0, CONF_ENTRY_DATE: None}
         )
-        h[CONF_SHARES] = round(
-            float(h.get(CONF_SHARES, 0)) + float(call.data["shares"]), 6
-        )
-        h[CONF_INVESTED] = round(
-            float(h.get(CONF_INVESTED, 0)) + float(call.data["cost"]), 2
-        )
+        h[CONF_SHARES] = round(float(h.get(CONF_SHARES, 0)) + shares, 6)
+        h[CONF_INVESTED] = round(float(h.get(CONF_INVESTED, 0)) + cost, 2)
         if not h.get(CONF_ENTRY_DATE):
             h[CONF_ENTRY_DATE] = str(date.today())
         holdings[symbol] = h
         new_options = dict(entry.options)
         new_options[CONF_HOLDINGS] = holdings
+        _append_trade(
+            new_options,
+            {
+                "type": "buy",
+                "symbol": symbol,
+                "shares": shares,
+                "amount": cost,
+                "date": datetime.now().isoformat(timespec="seconds"),
+            },
+        )
         hass.config_entries.async_update_entry(entry, options=new_options)
 
     async def handle_sell(call: ServiceCall) -> None:
@@ -136,16 +149,42 @@ def _register_services(hass: HomeAssistant) -> None:
             _LOGGER.error("Invalid share amount to sell for %s", symbol)
             return
         avg_cost = float(h.get(CONF_INVESTED, 0)) / cur_shares if cur_shares else 0
+        cost_basis_sold = avg_cost * sell_shares
+        proceeds = call.data.get("proceeds")
+        if proceeds is None:
+            # Fall back to last known market price × shares when proceeds omitted
+            data = hass.data.get(DOMAIN, {}).get(entry.entry_id, {})
+            coord = data.get("coordinator")
+            price = None
+            if coord and coord.data:
+                price = (coord.data.get(symbol) or {}).get("price")
+            proceeds = float(price * sell_shares) if price is not None else cost_basis_sold
+        realized = float(proceeds) - cost_basis_sold
+
         h[CONF_SHARES] = round(cur_shares - sell_shares, 6)
-        h[CONF_INVESTED] = round(
-            float(h.get(CONF_INVESTED, 0)) - (avg_cost * sell_shares), 2
-        )
+        h[CONF_INVESTED] = round(float(h.get(CONF_INVESTED, 0)) - cost_basis_sold, 2)
         if h[CONF_SHARES] <= 0:
             holdings.pop(symbol, None)
         else:
             holdings[symbol] = h
+
         new_options = dict(entry.options)
         new_options[CONF_HOLDINGS] = holdings
+        new_options[CONF_REALIZED_GAIN] = round(
+            float(new_options.get(CONF_REALIZED_GAIN, 0)) + realized, 2
+        )
+        _append_trade(
+            new_options,
+            {
+                "type": "sell",
+                "symbol": symbol,
+                "shares": sell_shares,
+                "amount": float(proceeds),
+                "cost_basis": round(cost_basis_sold, 2),
+                "realized": round(realized, 2),
+                "date": datetime.now().isoformat(timespec="seconds"),
+            },
+        )
         hass.config_entries.async_update_entry(entry, options=new_options)
 
     hass.services.async_register(DOMAIN, SERVICE_BUY, handle_buy, schema=BUY_SCHEMA)

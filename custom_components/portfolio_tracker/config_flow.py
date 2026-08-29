@@ -23,8 +23,11 @@ from .const import (
     CONF_ENTRY_DATE,
     CONF_SCAN_INTERVAL,
     CONF_IDLE_SCAN_INTERVAL,
+    CONF_REALIZED_GAIN,
+    CONF_TRADE_LOG,
     DEFAULT_SCAN_INTERVAL_MINUTES,
     IDLE_SCAN_INTERVAL_MINUTES,
+    MAX_TRADE_LOG,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -182,15 +185,38 @@ class PortfolioTrackerOptionsFlowHandler(config_entries.OptionsFlow):
                 errors["base"] = "invalid_shares"
             else:
                 avg_cost = float(h[CONF_INVESTED]) / cur_shares if cur_shares else 0
+                cost_basis_sold = avg_cost * sell_shares
+                proceeds = float(user_input.get("proceeds") or 0)
+                realized = (proceeds - cost_basis_sold) if proceeds else 0.0
                 h[CONF_SHARES] = round(cur_shares - sell_shares, 6)
                 h[CONF_INVESTED] = round(
-                    float(h[CONF_INVESTED]) - (avg_cost * sell_shares), 2
+                    float(h[CONF_INVESTED]) - cost_basis_sold, 2
                 )
                 if h[CONF_SHARES] <= 0:
                     holdings.pop(symbol, None)
                 else:
                     holdings[symbol] = h
-                return await self._save(holdings)
+                # Persist realized P/L + short trade log on the entry options
+                new_options = dict(self.config_entry.options)
+                new_options[CONF_HOLDINGS] = holdings
+                if proceeds:
+                    new_options[CONF_REALIZED_GAIN] = round(
+                        float(new_options.get(CONF_REALIZED_GAIN, 0)) + realized, 2
+                    )
+                log = list(new_options.get(CONF_TRADE_LOG, []))
+                log.insert(
+                    0,
+                    {
+                        "type": "sell",
+                        "symbol": symbol,
+                        "shares": sell_shares,
+                        "amount": proceeds,
+                        "cost_basis": round(cost_basis_sold, 2),
+                        "realized": round(realized, 2),
+                    },
+                )
+                new_options[CONF_TRADE_LOG] = log[:MAX_TRADE_LOG]
+                return self.async_create_entry(title="", data=new_options)
 
         schema = vol.Schema(
             {

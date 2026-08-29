@@ -15,7 +15,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, VERSION, CONF_HOLDINGS, CONF_SHARES, CONF_INVESTED, CONF_ENTRY_DATE
+from .const import DOMAIN, VERSION, CONF_HOLDINGS, CONF_SHARES, CONF_INVESTED, CONF_ENTRY_DATE, CONF_REALIZED_GAIN, CONF_TRADE_LOG
 from .coordinator import PortfolioDataCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -46,6 +46,7 @@ async def async_setup_entry(
     entities.append(PortfolioTotalGainSensor(coordinator, entry))
     entities.append(PortfolioDayChangeSensor(coordinator, entry))
     entities.append(PortfolioHoldingsCountSensor(coordinator, entry))
+    entities.append(PortfolioRealizedGainSensor(coordinator, entry))
     entities.append(PortfolioHoldingsTableSensor(coordinator, entry))
     entities.append(MarketSessionSensor(entry, "us", "US Market Session"))
     entities.append(MarketSessionSensor(entry, "eu", "EU Market Session"))
@@ -376,6 +377,31 @@ class PortfolioHoldingsCountSensor(_BaseTotalSensor):
     @property
     def extra_state_attributes(self):
         return {"symbols": sorted(self._holdings.keys())}
+
+
+class PortfolioRealizedGainSensor(_BaseTotalSensor):
+    """Lifetimeulated realized P/L from completed sells."""
+
+    def __init__(self, coordinator, entry):
+        super().__init__(coordinator, entry)
+        self._attr_unique_id = f"{entry.entry_id}_realized_gain"
+        self._attr_name = "Portfolio Realized Gain"
+        self._attr_icon = "mdi:cash-check"
+        self.entity_id = "sensor.portfolio_realized_gain"
+
+    @property
+    def native_value(self):
+        return round(float(self._entry.options.get(CONF_REALIZED_GAIN, 0) or 0), 2)
+
+    @property
+    def extra_state_attributes(self):
+        log = list(self._entry.options.get(CONF_TRADE_LOG, []))
+        sells = [t for t in log if t.get("type") == "sell"]
+        return {
+            "trade_count": len(log),
+            "sell_count": len(sells),
+            "recent_trades": log[:10],
+        }
 
 
 class PortfolioHoldingsTableSensor(_BaseTotalSensor):

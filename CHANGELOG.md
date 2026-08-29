@@ -1,27 +1,21 @@
 # Changelog
 
-## 1.2.0 — 2026-08-29
+## 1.3.0 — 2026-08-29
 
 ### Added
-- HACS / HA brand icons (`icon.png`, `brand/icon.png`, `brand/logo.png`)
-- Diagnostics support (Settings → Devices → Download diagnostics)
-- `sensor.portfolio_holdings_count`
-- Position `allocation_pct` attribute
-- Yahoo enrichment: company name, exchange, 52-week high/low, volume, market state
-- Configure → **Update intervals** (open-market vs closed-market poll cadence)
-- Holdings table rows include `name` and `allocation_pct`
+- **Realized P/L** sensor (`sensor.portfolio_realized_gain`) and trade log
+- Sell flow / `sell_shares` service accept **proceeds** to record realized gain
+- 512×512 brand icons (`icon.png`, `brand/icon.png`, `icon@2x.png`)
+- Polished README + HACS `info.md` with logo and frontend card checklist
 
-### Fixed
-- Stable entity IDs (`sensor.nvda_price`, `sensor.portfolio_total_value`, …)
-- Market session open detection for dashboard templates (`open` / `closed`)
+### Notes
+- HACS “Icon not available” on custom repos is a known HACS limitation; HA Devices & Services shows the icon correctly.
 
-### HACS updates
-HACS detects a new version when `manifest.json` → `version` increases on the
-default branch or a GitHub Release is published. After updating, **restart
-Home Assistant**.
+## 1.2.0
+- Diagnostics, holdings count, allocation %, Yahoo enrichment, update intervals
 
 ## 1.1.1
-- Force stable entity_id values
+- Stable entity IDs
 
 ## 1.1.0
-- Initial public packaging for HACS custom repository
+- Initial HACS packaging

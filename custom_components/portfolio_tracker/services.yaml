@@ -6,7 +6,7 @@ buy_shares:
   fields:
     symbol:
       name: Symbol
-      description: Ticker symbol (e.g. NVDA, VUAA.L)
+      description: Ticker symbol (e.g. NVDA, VUAA.L, BTC-USD)
       required: true
       example: "NVDA"
       selector:
@@ -22,7 +22,7 @@ buy_shares:
           mode: box
     cost:
       name: Total cost
-      description: Total dollar amount spent on this purchase (not per-share price)
+      description: Total amount spent on this purchase (not per-share price)
       required: true
       selector:
         number:
@@ -34,8 +34,8 @@ sell_shares:
   name: Sell shares
   description: >-
     Remove shares from a holding. Invested capital is reduced proportionally
-    using the current average cost basis. Selling all shares removes the
-    holding.
+    using average cost basis. Optional proceeds records realized P/L.
+    Selling all shares removes the holding.
   fields:
     symbol:
       name: Symbol
@@ -52,4 +52,15 @@ sell_shares:
         number:
           min: 0
           step: 0.0001
+          mode: box
+    proceeds:
+      name: Total proceeds
+      description: >-
+        Total amount received from the sale. Used to calculate realized gain/loss.
+        If omitted, last known market price × shares is used.
+      required: false
+      selector:
+        number:
+          min: 0
+          step: 0.01
           mode: box
