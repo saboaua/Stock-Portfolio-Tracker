@@ -15,7 +15,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, CONF_HOLDINGS, CONF_SHARES, CONF_INVESTED, CONF_ENTRY_DATE
+from .const import DOMAIN, VERSION, CONF_HOLDINGS, CONF_SHARES, CONF_INVESTED, CONF_ENTRY_DATE
 from .coordinator import PortfolioDataCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -45,8 +45,8 @@ async def async_setup_entry(
     entities.append(PortfolioTotalInvestedSensor(coordinator, entry))
     entities.append(PortfolioTotalGainSensor(coordinator, entry))
     entities.append(PortfolioDayChangeSensor(coordinator, entry))
+    entities.append(PortfolioHoldingsCountSensor(coordinator, entry))
     entities.append(PortfolioHoldingsTableSensor(coordinator, entry))
-    # Market session clocks (open / close times as text sensors)
     entities.append(MarketSessionSensor(entry, "us", "US Market Session"))
     entities.append(MarketSessionSensor(entry, "eu", "EU Market Session"))
 
@@ -57,9 +57,10 @@ def _device_info(entry: ConfigEntry) -> DeviceInfo:
     return DeviceInfo(
         identifiers={(DOMAIN, entry.entry_id)},
         name="Portfolio Tracker",
-        manufacturer="Custom",
-        model="Portfolio Tracker",
-        sw_version="1.1.0",
+        manufacturer="Portfolio Tracker",
+        model="Yahoo Finance",
+        sw_version=VERSION,
+        configuration_url="homeassistant://config/integrations/integration/portfolio_tracker",
     )
 
 
@@ -98,6 +99,7 @@ class PortfolioPriceSensor(_BaseHoldingSensor):
         self._attr_unique_id = f"{entry.entry_id}_{slug}_price"
         self._attr_name = f"{symbol} Price"
         self._attr_icon = "mdi:chart-line"
+        self.entity_id = f"sensor.{slug}_price"
 
     @property
     def native_value(self):
@@ -113,10 +115,18 @@ class PortfolioPriceSensor(_BaseHoldingSensor):
         d = self._price_data
         return {
             "symbol": self._symbol,
+            "short_name": d.get("short_name"),
+            "long_name": d.get("long_name"),
+            "exchange": d.get("exchange"),
             "previous_close": d.get("previous_close"),
             "day_change": d.get("day_change"),
             "day_change_pct": d.get("day_change_pct"),
             "currency": d.get("currency"),
+            "market_state": d.get("market_state"),
+            "fifty_two_week_high": d.get("fifty_two_week_high"),
+            "fifty_two_week_low": d.get("fifty_two_week_low"),
+            "regular_market_volume": d.get("regular_market_volume"),
+            "instrument_type": d.get("instrument_type"),
         }
 
 
@@ -132,12 +142,25 @@ class PortfolioPositionSensor(_BaseHoldingSensor):
         self._attr_unique_id = f"{entry.entry_id}_{slug}_position_value"
         self._attr_name = f"{symbol} Position Value"
         self._attr_icon = "mdi:cash-multiple"
+        self.entity_id = f"sensor.{slug}_position_value"
 
     def _shares(self) -> float:
         return float(self._holding.get(CONF_SHARES, 0) or 0)
 
     def _invested(self) -> float:
         return float(self._holding.get(CONF_INVESTED, 0) or 0)
+
+    def _portfolio_total(self) -> float:
+        total = 0.0
+        holdings = self._entry.options.get(CONF_HOLDINGS, {})
+        data = self.coordinator.data or {}
+        for sym, holding in holdings.items():
+            pd = data.get(sym) or {}
+            price = pd.get("price")
+            shares = float(holding.get(CONF_SHARES, 0) or 0)
+            if price is not None:
+                total += price * shares
+        return total
 
     @property
     def native_unit_of_measurement(self):
@@ -159,6 +182,10 @@ class PortfolioPositionSensor(_BaseHoldingSensor):
         gain = (value - invested) if value is not None else None
         gain_pct = ((gain / invested) * 100) if gain is not None and invested else 0
         avg_cost = (invested / shares) if shares else 0
+        portfolio_total = self._portfolio_total()
+        allocation_pct = (
+            (value / portfolio_total * 100) if value is not None and portfolio_total else 0
+        )
 
         entry_date = self._holding.get(CONF_ENTRY_DATE)
         days_held = None
@@ -169,16 +196,24 @@ class PortfolioPositionSensor(_BaseHoldingSensor):
             except ValueError:
                 days_held = None
 
+        d = self._price_data
         return {
             "symbol": self._symbol,
+            "short_name": d.get("short_name"),
+            "long_name": d.get("long_name"),
             "shares": round(shares, 6),
             "invested": round(invested, 2),
             "gain": round(gain, 2) if gain is not None else None,
             "gain_pct": round(gain_pct, 2),
+            "allocation_pct": round(allocation_pct, 2),
             "avg_cost_per_share": round(avg_cost, 4),
             "entry_date": entry_date,
             "days_held": days_held,
-            "currency": self._price_data.get("currency"),
+            "currency": d.get("currency"),
+            "day_change": d.get("day_change"),
+            "day_change_pct": d.get("day_change_pct"),
+            "fifty_two_week_high": d.get("fifty_two_week_high"),
+            "fifty_two_week_low": d.get("fifty_two_week_low"),
         }
 
 
@@ -222,6 +257,7 @@ class PortfolioTotalValueSensor(_BaseTotalSensor):
         self._attr_unique_id = f"{entry.entry_id}_total_value"
         self._attr_name = "Portfolio Total Value"
         self._attr_icon = "mdi:wallet"
+        self.entity_id = "sensor.portfolio_total_value"
 
     @property
     def native_value(self):
@@ -232,6 +268,13 @@ class PortfolioTotalValueSensor(_BaseTotalSensor):
                 total += val
         return round(total, 2)
 
+    @property
+    def extra_state_attributes(self):
+        return {
+            "holdings_count": len(self._holdings),
+            "symbols": sorted(self._holdings.keys()),
+        }
+
 
 class PortfolioTotalInvestedSensor(_BaseTotalSensor):
     _attr_state_class = SensorStateClass.TOTAL
@@ -241,6 +284,7 @@ class PortfolioTotalInvestedSensor(_BaseTotalSensor):
         self._attr_unique_id = f"{entry.entry_id}_total_invested"
         self._attr_name = "Portfolio Total Invested"
         self._attr_icon = "mdi:piggy-bank"
+        self.entity_id = "sensor.portfolio_total_invested"
 
     @property
     def native_value(self):
@@ -255,6 +299,7 @@ class PortfolioTotalGainSensor(_BaseTotalSensor):
         self._attr_unique_id = f"{entry.entry_id}_total_gain"
         self._attr_name = "Portfolio Total Gain"
         self._attr_icon = "mdi:trending-up"
+        self.entity_id = "sensor.portfolio_total_gain"
 
     def _totals(self):
         total_value = 0.0
@@ -288,6 +333,7 @@ class PortfolioDayChangeSensor(_BaseTotalSensor):
         self._attr_unique_id = f"{entry.entry_id}_day_change"
         self._attr_name = "Portfolio Day Change"
         self._attr_icon = "mdi:chart-timeline-variant"
+        self.entity_id = "sensor.portfolio_day_change"
 
     @property
     def native_value(self):
@@ -309,6 +355,29 @@ class PortfolioDayChangeSensor(_BaseTotalSensor):
         return {"gain_pct": round(gain_pct, 2)}
 
 
+class PortfolioHoldingsCountSensor(_BaseTotalSensor):
+    """Number of open positions in the portfolio."""
+
+    _attr_device_class = None
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = None
+
+    def __init__(self, coordinator, entry):
+        super().__init__(coordinator, entry)
+        self._attr_unique_id = f"{entry.entry_id}_holdings_count"
+        self._attr_name = "Portfolio Holdings Count"
+        self._attr_icon = "mdi:counter"
+        self.entity_id = "sensor.portfolio_holdings_count"
+
+    @property
+    def native_value(self):
+        return len(self._holdings)
+
+    @property
+    def extra_state_attributes(self):
+        return {"symbols": sorted(self._holdings.keys())}
+
+
 class PortfolioHoldingsTableSensor(_BaseTotalSensor):
     """Feeds a custom:flex-table-card holdings table."""
 
@@ -321,6 +390,7 @@ class PortfolioHoldingsTableSensor(_BaseTotalSensor):
         self._attr_unique_id = f"{entry.entry_id}_holdings_table"
         self._attr_name = "Portfolio Holdings Table"
         self._attr_icon = "mdi:table"
+        self.entity_id = "sensor.portfolio_holdings_table"
 
     @property
     def native_value(self):
@@ -329,52 +399,59 @@ class PortfolioHoldingsTableSensor(_BaseTotalSensor):
     @property
     def extra_state_attributes(self):
         rows = []
+        portfolio_total = 0.0
+        # first pass for allocation
+        tmp = []
         for symbol, holding in self._holdings.items():
             price_data = (self.coordinator.data or {}).get(symbol) or {}
             price = price_data.get("price") or 0
             shares = float(holding.get(CONF_SHARES, 0) or 0)
             invested = float(holding.get(CONF_INVESTED, 0) or 0)
-            avg_cost = (invested / shares) if shares else 0
             market_value = price * shares
+            portfolio_total += market_value
+            tmp.append((symbol, holding, price_data, price, shares, invested, market_value))
+
+        for symbol, holding, price_data, price, shares, invested, market_value in tmp:
+            avg_cost = (invested / shares) if shares else 0
             day_change = price_data.get("day_change") or 0
             day_change_pct = price_data.get("day_change_pct") or 0
             gain = market_value - invested
             gain_pct = (gain / invested * 100) if invested else 0
+            alloc = (market_value / portfolio_total * 100) if portfolio_total else 0
 
             rows.append(
                 {
                     "symbol": symbol,
+                    "name": price_data.get("short_name") or symbol,
                     "status": "Open",
                     "shares": round(shares, 2),
                     "last_price": round(price, 2),
                     "ac_share": round(avg_cost, 2),
                     "total_cost": round(invested, 2),
                     "market_value": round(market_value, 2),
+                    "allocation_pct": round(alloc, 2),
                     "day_gain_pct": round(day_change_pct, 2),
                     "day_gain_dollar": round(day_change * shares, 2),
                     "tot_gain_pct": round(gain_pct, 2),
                     "tot_gain_dollar": round(gain, 2),
                 }
             )
-        return {"rows": rows}
+        return {"rows": rows, "holdings_count": len(rows)}
 
 
 class MarketSessionSensor(SensorEntity):
-    """Human-readable open/close schedule for US or EU markets.
-
-    State is 'open' or 'closed'. Attributes carry next open/close timestamps
-    and the exchange-local clock times so dashboards can display them.
-    """
+    """Human-readable open/close schedule for US or EU markets."""
 
     _attr_should_poll = False
     _attr_icon = "mdi:clock-outline"
 
     def __init__(self, entry: ConfigEntry, market: str, name: str) -> None:
         self._entry = entry
-        self._market = market  # "us" or "eu"
+        self._market = market
         self._attr_name = name
         self._attr_unique_id = f"{entry.entry_id}_{market}_market_session"
         self._attr_device_info = _device_info(entry)
+        self.entity_id = f"sensor.{market}_market_session"
         self._unsub = None
 
     async def async_added_to_hass(self) -> None:

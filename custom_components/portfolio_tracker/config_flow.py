@@ -21,6 +21,10 @@ from .const import (
     CONF_SHARES,
     CONF_INVESTED,
     CONF_ENTRY_DATE,
+    CONF_SCAN_INTERVAL,
+    CONF_IDLE_SCAN_INTERVAL,
+    DEFAULT_SCAN_INTERVAL_MINUTES,
+    IDLE_SCAN_INTERVAL_MINUTES,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -76,6 +80,7 @@ class PortfolioTrackerOptionsFlowHandler(config_entries.OptionsFlow):
                 "sell_shares_symbol",
                 "edit_holding_symbol",
                 "remove_holding",
+                "settings",
             ],
         )
 
@@ -260,3 +265,28 @@ class PortfolioTrackerOptionsFlowHandler(config_entries.OptionsFlow):
             {vol.Required(CONF_SYMBOL): vol.In(sorted(holdings.keys()))}
         )
         return self.async_show_form(step_id="remove_holding", data_schema=schema)
+
+    # -------------------------------------------------------------- settings
+
+    async def async_step_settings(self, user_input=None):
+        """Configure poll intervals (market open vs closed)."""
+        if user_input is not None:
+            new_options = dict(self.config_entry.options)
+            new_options[CONF_SCAN_INTERVAL] = int(user_input[CONF_SCAN_INTERVAL])
+            new_options[CONF_IDLE_SCAN_INTERVAL] = int(user_input[CONF_IDLE_SCAN_INTERVAL])
+            return self.async_create_entry(title="", data=new_options)
+
+        opts = self.config_entry.options
+        schema = vol.Schema(
+            {
+                vol.Required(
+                    CONF_SCAN_INTERVAL,
+                    default=opts.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_MINUTES),
+                ): vol.All(vol.Coerce(int), vol.Range(min=1, max=60)),
+                vol.Required(
+                    CONF_IDLE_SCAN_INTERVAL,
+                    default=opts.get(CONF_IDLE_SCAN_INTERVAL, IDLE_SCAN_INTERVAL_MINUTES),
+                ): vol.All(vol.Coerce(int), vol.Range(min=5, max=240)),
+            }
+        )
+        return self.async_show_form(step_id="settings", data_schema=schema)

@@ -22,7 +22,7 @@ def _device_info(entry: ConfigEntry) -> DeviceInfo:
         name="Portfolio Tracker",
         manufacturer="Custom",
         model="Portfolio Tracker",
-        sw_version="1.1.0",
+        sw_version="1.2.0",
     )
 
 
@@ -66,6 +66,8 @@ class MarketOpenSensor(BinarySensorEntity):
         self._attr_unique_id = f"{entry.entry_id}_{key}"
         self._attr_icon = icon
         self._attr_device_info = _device_info(entry)
+        # Stable entity_id: binary_sensor.us_market_open / eu_market_open
+        self.entity_id = f"binary_sensor.{key}"
         self._unsub = None
 
     async def async_added_to_hass(self) -> None:

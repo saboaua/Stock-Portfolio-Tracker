@@ -13,10 +13,15 @@ from homeassistant.helpers import config_validation as cv
 
 from .const import (
     DOMAIN,
+    VERSION,
     CONF_HOLDINGS,
     CONF_SHARES,
     CONF_INVESTED,
     CONF_ENTRY_DATE,
+    CONF_SCAN_INTERVAL,
+    CONF_IDLE_SCAN_INTERVAL,
+    DEFAULT_SCAN_INTERVAL_MINUTES,
+    IDLE_SCAN_INTERVAL_MINUTES,
     SERVICE_BUY,
     SERVICE_SELL,
 )
@@ -49,7 +54,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     def get_symbols():
         return list(entry.options.get(CONF_HOLDINGS, {}).keys())
 
-    coordinator = PortfolioDataCoordinator(hass, get_symbols)
+    scan = int(entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_MINUTES))
+    idle = int(entry.options.get(CONF_IDLE_SCAN_INTERVAL, IDLE_SCAN_INTERVAL_MINUTES))
+
+    coordinator = PortfolioDataCoordinator(hass, get_symbols, scan, idle)
     hass.data[DOMAIN][entry.entry_id] = {"coordinator": coordinator, "entry": entry}
 
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
@@ -58,11 +66,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     _register_services(hass)
 
+    _LOGGER.info("Portfolio Tracker %s started", VERSION)
     return True
 
 
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Reload the entry whenever holdings change (added/bought/sold/edited)."""
+    """Reload the entry whenever holdings or options change."""
     await hass.config_entries.async_reload(entry.entry_id)
 
 
@@ -71,7 +80,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id, None)
-        # Drop services only when no instances remain.
         if not hass.data.get(DOMAIN):
             for service in (SERVICE_BUY, SERVICE_SELL):
                 if hass.services.has_service(DOMAIN, service):
@@ -98,8 +106,12 @@ def _register_services(hass: HomeAssistant) -> None:
         h = holdings.get(
             symbol, {CONF_SHARES: 0, CONF_INVESTED: 0, CONF_ENTRY_DATE: None}
         )
-        h[CONF_SHARES] = round(float(h.get(CONF_SHARES, 0)) + float(call.data["shares"]), 6)
-        h[CONF_INVESTED] = round(float(h.get(CONF_INVESTED, 0)) + float(call.data["cost"]), 2)
+        h[CONF_SHARES] = round(
+            float(h.get(CONF_SHARES, 0)) + float(call.data["shares"]), 6
+        )
+        h[CONF_INVESTED] = round(
+            float(h.get(CONF_INVESTED, 0)) + float(call.data["cost"]), 2
+        )
         if not h.get(CONF_ENTRY_DATE):
             h[CONF_ENTRY_DATE] = str(date.today())
         holdings[symbol] = h

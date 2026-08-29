@@ -19,7 +19,8 @@
           "buy_shares_symbol": "Buy more shares",
           "sell_shares_symbol": "Sell shares",
           "edit_holding_symbol": "Edit shares / cost basis",
-          "remove_holding": "Remove a stock"
+          "remove_holding": "Remove a stock",
+          "settings": "Update intervals"
         }
       },
       "add_holding": {
@@ -33,7 +34,9 @@
       },
       "buy_shares_symbol": {
         "title": "Which stock did you buy?",
-        "data": { "symbol": "Symbol" }
+        "data": {
+          "symbol": "Symbol"
+        }
       },
       "buy_shares_amount": {
         "title": "Buy {symbol} shares",
@@ -44,18 +47,22 @@
       },
       "sell_shares_symbol": {
         "title": "Which stock did you sell?",
-        "data": { "symbol": "Symbol" }
+        "data": {
+          "symbol": "Symbol"
+        }
       },
       "sell_shares_amount": {
         "title": "Sell {symbol} shares (you own {current_shares})",
         "data": {
           "shares": "Shares sold",
-          "proceeds": "Total proceeds ($) — for your own records only"
+          "proceeds": "Total proceeds ($) \u2014 for your own records only"
         }
       },
       "edit_holding_symbol": {
         "title": "Which stock do you want to edit?",
-        "data": { "symbol": "Symbol" }
+        "data": {
+          "symbol": "Symbol"
+        }
       },
       "edit_holding_values": {
         "title": "Edit {symbol}",
@@ -67,7 +74,17 @@
       },
       "remove_holding": {
         "title": "Remove a stock",
-        "data": { "symbol": "Symbol" }
+        "data": {
+          "symbol": "Symbol"
+        }
+      },
+      "settings": {
+        "title": "Update intervals",
+        "description": "How often to refresh prices from Yahoo Finance (minutes).",
+        "data": {
+          "scan_interval": "While markets are open (minutes)",
+          "idle_scan_interval": "While markets are closed (minutes)"
+        }
       }
     },
     "abort": {

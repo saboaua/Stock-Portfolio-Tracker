@@ -11,36 +11,50 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from . import market_hours
-from .const import DOMAIN, DEFAULT_SCAN_INTERVAL_MINUTES, IDLE_SCAN_INTERVAL_MINUTES
+from .const import (
+    DOMAIN,
+    DEFAULT_SCAN_INTERVAL_MINUTES,
+    IDLE_SCAN_INTERVAL_MINUTES,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
-# Public chart endpoint — no API key required.
 CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (compatible; HomeAssistant-PortfolioTracker/1.1)"
+    "User-Agent": "Mozilla/5.0 (compatible; HomeAssistant-PortfolioTracker/1.2)"
 }
 
 
 class PortfolioDataCoordinator(DataUpdateCoordinator):
     """Polls Yahoo Finance for every symbol currently in the portfolio."""
 
-    def __init__(self, hass: HomeAssistant, symbols_getter) -> None:
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        symbols_getter,
+        scan_minutes: int = DEFAULT_SCAN_INTERVAL_MINUTES,
+        idle_minutes: int = IDLE_SCAN_INTERVAL_MINUTES,
+    ) -> None:
         super().__init__(
             hass,
             _LOGGER,
             name=DOMAIN,
-            update_interval=timedelta(minutes=DEFAULT_SCAN_INTERVAL_MINUTES),
+            update_interval=timedelta(minutes=scan_minutes),
         )
         self._symbols_getter = symbols_getter
+        self._scan_minutes = scan_minutes
+        self._idle_minutes = idle_minutes
         self._session = async_get_clientsession(hass)
 
+    def set_intervals(self, scan_minutes: int, idle_minutes: int) -> None:
+        self._scan_minutes = scan_minutes
+        self._idle_minutes = idle_minutes
+
     async def _async_update_data(self):
-        # Adaptive polling: 5 min while a market is open, 30 min otherwise.
         if market_hours.any_market_open():
-            self.update_interval = timedelta(minutes=DEFAULT_SCAN_INTERVAL_MINUTES)
+            self.update_interval = timedelta(minutes=self._scan_minutes)
         else:
-            self.update_interval = timedelta(minutes=IDLE_SCAN_INTERVAL_MINUTES)
+            self.update_interval = timedelta(minutes=self._idle_minutes)
 
         symbols = self._symbols_getter()
         if not symbols:
@@ -50,7 +64,7 @@ class PortfolioDataCoordinator(DataUpdateCoordinator):
         for symbol in symbols:
             try:
                 results[symbol] = await self._fetch_symbol(symbol)
-            except Exception as err:  # noqa: BLE001 — keep other symbols updating
+            except Exception as err:  # noqa: BLE001
                 _LOGGER.warning("Could not update %s: %s", symbol, err)
                 results[symbol] = None
         return results
@@ -91,4 +105,12 @@ class PortfolioDataCoordinator(DataUpdateCoordinator):
             "day_change": day_change,
             "day_change_pct": day_change_pct,
             "currency": currency,
+            "short_name": meta.get("shortName") or meta.get("symbol") or symbol,
+            "long_name": meta.get("longName") or meta.get("shortName"),
+            "exchange": meta.get("exchangeName") or meta.get("fullExchangeName"),
+            "market_state": meta.get("marketState"),
+            "fifty_two_week_high": meta.get("fiftyTwoWeekHigh"),
+            "fifty_two_week_low": meta.get("fiftyTwoWeekLow"),
+            "regular_market_volume": meta.get("regularMarketVolume"),
+            "instrument_type": meta.get("instrumentType"),
         }
