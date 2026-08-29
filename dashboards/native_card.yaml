@@ -1,0 +1,22 @@
+# Native Lovelace card shipped with the integration (no HACS frontend deps).
+# Resource is registered automatically:
+#   /portfolio_tracker_static/portfolio-tracker-card.js  (JavaScript Module)
+#
+# Views: summary | charts | holdings
+# Range (charts only): 1W | 1M
+
+# --- Summary ---------------------------------------------------------------
+type: custom:portfolio-tracker-card
+title: My Portfolio
+view: summary
+
+# --- Charts (sparklines) ---------------------------------------------------
+# type: custom:portfolio-tracker-card
+# title: My Portfolio
+# view: charts
+# range: 1W
+
+# --- Holdings list ---------------------------------------------------------
+# type: custom:portfolio-tracker-card
+# title: My Portfolio
+# view: holdings

@@ -1,0 +1,89 @@
+# Portfolio hero summary — total value, unrealized gain, day change, cost basis
+# HACS Frontend: button-card, card_mod (optional)
+# Entities: sensor.portfolio_total_value, _total_gain, _day_change, _total_invested
+
+type: custom:button-card
+entity: sensor.portfolio_total_value
+show_icon: false
+show_name: false
+show_state: false
+show_label: true
+triggers_update:
+  - sensor.portfolio_total_value
+  - sensor.portfolio_total_gain
+  - sensor.portfolio_day_change
+  - sensor.portfolio_total_invested
+  - sensor.portfolio_holdings_count
+tap_action:
+  action: more-info
+label: |
+  [[[
+    const pick = (...ids) => ids.map(i => states[i]).find(Boolean);
+    const totalS = pick('sensor.portfolio_total_value', 'sensor.portfolio_tracker_portfolio_total_value');
+    const gainS  = pick('sensor.portfolio_total_gain', 'sensor.portfolio_tracker_portfolio_total_gain');
+    const dayS   = pick('sensor.portfolio_day_change', 'sensor.portfolio_tracker_portfolio_day_change');
+    const costS  = pick('sensor.portfolio_total_invested', 'sensor.portfolio_tracker_portfolio_total_invested');
+    const cntS   = pick('sensor.portfolio_holdings_count', 'sensor.portfolio_tracker_portfolio_holdings_count');
+
+    const ccy = totalS?.attributes?.base_currency || 'USD';
+    const fmt = (n) => {
+      try {
+        return new Intl.NumberFormat(undefined, { style: 'currency', currency: ccy, maximumFractionDigits: 2 }).format(n || 0);
+      } catch {
+        return ccy + ' ' + Number(n || 0).toFixed(2);
+      }
+    };
+
+    const total = parseFloat(totalS?.state) || 0;
+    const gain  = parseFloat(gainS?.state) || 0;
+    const gainPct = parseFloat(gainS?.attributes?.gain_pct) || 0;
+    const day   = parseFloat(dayS?.state) || 0;
+    const dayPct = parseFloat(dayS?.attributes?.gain_pct) || 0;
+    const cost  = parseFloat(costS?.state) || 0;
+    const count = parseInt(cntS?.state, 10) || 0;
+
+    const gUp = gain >= 0, dUp = day >= 0;
+    const gColor = gUp ? '#22c55e' : '#ef4444';
+    const dColor = dUp ? '#22c55e' : '#ef4444';
+    const gArrow = gUp ? '▲' : '▼';
+    const dArrow = dUp ? '▲' : '▼';
+
+    return `
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;padding:8px 4px;">
+        <div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.65);text-transform:uppercase;letter-spacing:1.4px;margin-bottom:8px;">
+          Portfolio · ${count} holding${count === 1 ? '' : 's'}
+        </div>
+        <div style="font-size:34px;font-weight:800;letter-spacing:-1.2px;color:#fff;margin-bottom:14px;line-height:1.1;">
+          ${fmt(total)}
+        </div>
+        <div style="display:flex;justify-content:center;gap:10px;margin-bottom:12px;flex-wrap:wrap;">
+          <div style="background:rgba(255,255,255,0.09);border-radius:12px;padding:7px 12px;min-width:125px;">
+            <div style="font-size:10px;font-weight:600;color:#fff;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.4px;">Unrealized</div>
+            <div style="font-size:13px;font-weight:700;color:${gColor};">
+              ${gArrow} ${fmt(Math.abs(gain))}
+              <span style="font-size:11px;opacity:0.9;">(${gainPct.toFixed(2)}%)</span>
+            </div>
+          </div>
+          <div style="background:rgba(255,255,255,0.09);border-radius:12px;padding:7px 12px;min-width:125px;">
+            <div style="font-size:10px;font-weight:600;color:#fff;margin-bottom:3px;text-transform:uppercase;letter-spacing:0.4px;">Day Change</div>
+            <div style="font-size:13px;font-weight:700;color:${dColor};">
+              ${dArrow} ${fmt(Math.abs(day))}
+              <span style="font-size:11px;opacity:0.9;">(${dayPct.toFixed(2)}%)</span>
+            </div>
+          </div>
+        </div>
+        <div style="font-size:12px;font-weight:500;color:rgba(255,255,255,0.55);">
+          Cost basis: ${fmt(cost)}
+        </div>
+      </div>
+    `;
+  ]]]
+styles:
+  card:
+    - background: 'linear-gradient(135deg, #312e81 0%, #1e1b4b 100%)'
+    - border-radius: 16px
+    - padding: 16px 12px
+    - box-shadow: 0 8px 24px rgba(30, 27, 75, 0.35)
+    - border: none
+  label:
+    - width: 100%

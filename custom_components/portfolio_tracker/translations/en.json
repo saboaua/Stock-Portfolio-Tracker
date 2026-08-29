@@ -77,11 +77,13 @@
       },
       "settings": {
         "title": "Settings",
-        "description": "Base currency (FX conversion) and Yahoo refresh intervals.",
+        "description": "Base currency, update schedule preset, and optional fixed snapshot times (09:35, 12:00, 16:05 local).",
         "data": {
           "base_currency": "Base currency",
-          "scan_interval": "While markets are open (minutes)",
-          "idle_scan_interval": "While markets are closed (minutes)"
+          "schedule_preset": "Update schedule",
+          "scan_interval": "Open-market interval (minutes) — used when schedule is Custom",
+          "idle_scan_interval": "Closed-market interval (minutes) — used when schedule is Custom",
+          "snapshot_enabled": "Also refresh at fixed times (09:35, 12:00, 16:05)"
         }
       }
     },

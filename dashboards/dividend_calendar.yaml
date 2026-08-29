@@ -1,0 +1,11 @@
+# Dividend calendar from the integration
+# Built-in HA calendar card — no HACS required
+# Entity: calendar.portfolio_dividends
+
+type: calendar
+entities:
+  - calendar.portfolio_dividends
+initial_view: listWeek
+# Alternatives:
+#   initial_view: dayGridMonth
+#   initial_view: listMonth

@@ -30,9 +30,14 @@ from .const import (
     CONF_REALIZED_GAIN,
     CONF_TRADE_LOG,
     CONF_BASE_CURRENCY,
+    CONF_SCHEDULE_PRESET,
+    CONF_SNAPSHOT_ENABLED,
     DEFAULT_SCAN_INTERVAL_MINUTES,
     IDLE_SCAN_INTERVAL_MINUTES,
     DEFAULT_BASE_CURRENCY,
+    DEFAULT_SCHEDULE_PRESET,
+    SCHEDULE_PRESETS,
+    SCHEDULE_PRESET_LABELS,
     MAX_TRADE_LOG,
     SUPPORTED_CURRENCIES,
 )
@@ -335,14 +340,27 @@ class PortfolioTrackerOptionsFlowHandler(config_entries.OptionsFlow):
     async def async_step_settings(self, user_input=None):
         if user_input is not None:
             new_options = dict(self.config_entry.options)
+            preset = str(user_input.get(CONF_SCHEDULE_PRESET, DEFAULT_SCHEDULE_PRESET))
+            new_options[CONF_SCHEDULE_PRESET] = preset
+            new_options[CONF_BASE_CURRENCY] = str(user_input[CONF_BASE_CURRENCY])
+            new_options[CONF_SNAPSHOT_ENABLED] = bool(
+                user_input.get(CONF_SNAPSHOT_ENABLED, False)
+            )
             new_options[CONF_SCAN_INTERVAL] = int(user_input[CONF_SCAN_INTERVAL])
             new_options[CONF_IDLE_SCAN_INTERVAL] = int(
                 user_input[CONF_IDLE_SCAN_INTERVAL]
             )
-            new_options[CONF_BASE_CURRENCY] = str(user_input[CONF_BASE_CURRENCY])
+            if preset in SCHEDULE_PRESETS and preset != "custom":
+                open_m, idle_m = SCHEDULE_PRESETS[preset]
+                new_options[CONF_SCAN_INTERVAL] = open_m
+                new_options[CONF_IDLE_SCAN_INTERVAL] = idle_m
             return self.async_create_entry(title="", data=new_options)
 
         opts = self.config_entry.options
+        preset_options = [
+            {"value": key, "label": SCHEDULE_PRESET_LABELS[key]}
+            for key in ("active", "balanced", "conservative", "custom")
+        ]
         schema = vol.Schema(
             {
                 vol.Required(
@@ -355,17 +373,31 @@ class PortfolioTrackerOptionsFlowHandler(config_entries.OptionsFlow):
                     )
                 ),
                 vol.Required(
+                    CONF_SCHEDULE_PRESET,
+                    default=opts.get(CONF_SCHEDULE_PRESET, DEFAULT_SCHEDULE_PRESET),
+                ): SelectSelector(
+                    SelectSelectorConfig(
+                        options=preset_options,
+                        mode=SelectSelectorMode.DROPDOWN,
+                    )
+                ),
+                vol.Required(
                     CONF_SCAN_INTERVAL,
                     default=int(
                         opts.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_MINUTES)
                     ),
-                ): vol.All(vol.Coerce(int), vol.Range(min=1, max=60)),
+                ): vol.All(vol.Coerce(int), vol.Range(min=1, max=120)),
                 vol.Required(
                     CONF_IDLE_SCAN_INTERVAL,
                     default=int(
                         opts.get(CONF_IDLE_SCAN_INTERVAL, IDLE_SCAN_INTERVAL_MINUTES)
                     ),
-                ): vol.All(vol.Coerce(int), vol.Range(min=5, max=240)),
+                ): vol.All(vol.Coerce(int), vol.Range(min=5, max=360)),
+                vol.Optional(
+                    CONF_SNAPSHOT_ENABLED,
+                    default=bool(opts.get(CONF_SNAPSHOT_ENABLED, False)),
+                ): bool,
             }
         )
         return self.async_show_form(step_id="settings", data_schema=schema)
+

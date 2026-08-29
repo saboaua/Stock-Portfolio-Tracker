@@ -27,6 +27,8 @@ from .const import (
     IDLE_SCAN_INTERVAL_MINUTES,
     DEFAULT_BASE_CURRENCY,
     MAX_TRADE_LOG,
+    resolve_scan_intervals,
+    CONF_SNAPSHOT_ENABLED,
     SERVICE_BUY,
     SERVICE_SELL,
     SERVICE_REFRESH,
@@ -70,13 +72,26 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     def get_base_currency():
         return entry.options.get(CONF_BASE_CURRENCY, DEFAULT_BASE_CURRENCY)
 
-    scan = int(entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_MINUTES))
-    idle = int(entry.options.get(CONF_IDLE_SCAN_INTERVAL, IDLE_SCAN_INTERVAL_MINUTES))
+    scan, idle = resolve_scan_intervals(entry.options)
 
     coordinator = PortfolioDataCoordinator(
         hass, get_symbols, get_base_currency, scan, idle
     )
     hass.data[DOMAIN][entry.entry_id] = {"coordinator": coordinator, "entry": entry}
+
+    # Optional fixed snapshots (open + close-ish) when schedule snapshot is enabled
+    if entry.options.get(CONF_SNAPSHOT_ENABLED):
+        from homeassistant.helpers.event import async_track_time_change
+
+        async def _snapshot(_now=None):
+            await coordinator.async_request_refresh()
+
+        for hour, minute in ((9, 35), (12, 0), (16, 5)):
+            entry.async_on_unload(
+                async_track_time_change(
+                    hass, _snapshot, hour=hour, minute=minute, second=0
+                )
+            )
 
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)

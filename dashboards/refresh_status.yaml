@@ -1,0 +1,43 @@
+# Last update timestamp + one-tap refresh
+# HACS Frontend: mushroom OR button-card
+# Entities: sensor.portfolio_last_update, button.portfolio_refresh
+
+type: horizontal-stack
+cards:
+  - type: custom:mushroom-template-card
+    entity: sensor.portfolio_last_update
+    primary: |
+      {% set t = states('sensor.portfolio_last_update') %}
+      {% if t not in ['unknown', 'unavailable', 'none', ''] %}
+        {{ as_timestamp(t) | timestamp_custom('%H:%M:%S') }}
+      {% else %}
+        Never
+      {% endif %}
+    secondary: |
+      {% set ok = state_attr('sensor.portfolio_last_update', 'last_update_success') %}
+      {% set err = state_attr('sensor.portfolio_last_update', 'last_error') %}
+      {% if ok is false and err %}
+        Error: {{ err }}
+      {% elif ok is false %}
+        Last refresh failed
+      {% else %}
+        Last successful refresh
+      {% endif %}
+    icon: mdi:clock-check-outline
+    icon_color: "{{ 'green' if state_attr('sensor.portfolio_last_update', 'last_update_success') is not false else 'red' }}"
+    tap_action:
+      action: more-info
+    layout: horizontal
+
+  - type: custom:mushroom-template-card
+    primary: Refresh now
+    secondary: Yahoo Finance
+    icon: mdi:refresh
+    icon_color: cyan
+    entity: button.portfolio_refresh
+    tap_action:
+      action: call-service
+      service: button.press
+      target:
+        entity_id: button.portfolio_refresh
+    layout: horizontal

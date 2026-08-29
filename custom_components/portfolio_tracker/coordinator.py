@@ -57,6 +57,7 @@ class PortfolioDataCoordinator(DataUpdateCoordinator):
         self._idle_minutes = idle_minutes
 
     async def _async_update_data(self):
+        # Adaptive: open uses scan interval; closed uses idle interval (from schedule preset)
         if market_hours.any_market_open():
             self.update_interval = timedelta(minutes=self._scan_minutes)
         else:

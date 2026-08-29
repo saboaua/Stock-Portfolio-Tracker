@@ -31,6 +31,7 @@ Most people install several stock components just to see price, P/L, and a chart
 | **Yahoo Finance** | Live prices without tokens or `yfinance` |
 | **Multi-currency FX** | Pick a base currency; foreign tickers convert automatically |
 | **Native card** | `summary` · `charts` (sparklines) · `holdings` |
+| **Update schedule** | Active / Balanced / Conservative / Custom + optional fixed snapshots |
 | **Refresh button** | Force an update anytime (`button.portfolio_refresh`) |
 | **Last update** | Know when data last succeeded (`sensor.portfolio_last_update`) |
 | **Error alerts** | Persistent notification if Yahoo refreshes keep failing |
@@ -95,4 +96,4 @@ range: 1W
 
 **Docs:** [github.com/saboaua/Stock-Portfolio-Tracker](https://github.com/saboaua/Stock-Portfolio-Tracker)
 
-**Version:** 1.4.5.1
+**Version:** 1.4.6

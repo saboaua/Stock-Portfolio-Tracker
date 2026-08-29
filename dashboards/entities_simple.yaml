@@ -1,0 +1,47 @@
+# Zero custom-card dependencies — pure Home Assistant built-ins
+# Good for tablets / minimal installs
+
+type: vertical-stack
+cards:
+  - type: entities
+    title: Portfolio
+    show_header_toggle: false
+    entities:
+      - entity: sensor.portfolio_total_value
+        name: Total Value
+      - entity: sensor.portfolio_total_invested
+        name: Cost Basis
+      - entity: sensor.portfolio_total_gain
+        name: Unrealized P/L
+        secondary_info: last-changed
+      - entity: sensor.portfolio_day_change
+        name: Day Change
+      - entity: sensor.portfolio_realized_gain
+        name: Realized P/L
+      - entity: sensor.portfolio_holdings_count
+        name: Holdings
+      - entity: sensor.portfolio_last_update
+        name: Last Update
+      - type: divider
+      - entity: binary_sensor.us_market_open
+        name: US Market
+      - entity: binary_sensor.eu_market_open
+        name: EU Market
+      - entity: sensor.us_market_session
+        name: US Session
+      - entity: sensor.eu_market_session
+        name: EU Session
+      - type: divider
+      - entity: button.portfolio_refresh
+        name: Refresh prices
+      - entity: calendar.portfolio_dividends
+        name: Dividends
+
+  - type: history-graph
+    title: Value (24h)
+    hours_to_show: 24
+    entities:
+      - entity: sensor.portfolio_total_value
+        name: Total
+      - entity: sensor.portfolio_day_change
+        name: Day Δ
