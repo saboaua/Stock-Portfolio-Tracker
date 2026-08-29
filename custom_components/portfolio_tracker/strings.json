@@ -14,13 +14,9 @@
     "step": {
       "init": {
         "title": "Manage Portfolio",
-        "menu_options": {
-          "add_holding": "Add a new stock",
-          "buy_shares_symbol": "Buy more shares",
-          "sell_shares_symbol": "Sell shares",
-          "edit_holding_symbol": "Edit shares / cost basis",
-          "remove_holding": "Remove a stock",
-          "settings": "Update intervals"
+        "description": "Choose an action. Icons appear next to each option.",
+        "data": {
+          "action": "Action"
         }
       },
       "add_holding": {
@@ -79,9 +75,10 @@
         }
       },
       "settings": {
-        "title": "Update intervals",
-        "description": "How often to refresh prices from Yahoo Finance (minutes).",
+        "title": "Settings",
+        "description": "Base currency (FX conversion) and Yahoo refresh intervals.",
         "data": {
+          "base_currency": "Base currency",
           "scan_interval": "While markets are open (minutes)",
           "idle_scan_interval": "While markets are closed (minutes)"
         }

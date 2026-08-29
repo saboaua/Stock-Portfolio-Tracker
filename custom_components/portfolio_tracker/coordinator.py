@@ -1,8 +1,8 @@
-"""Coordinator: fetches live prices for every tracked symbol via Yahoo Finance."""
+"""Coordinator: fetches live prices, FX rates, and dividend events."""
 from __future__ import annotations
 
 import logging
-from datetime import timedelta
+from datetime import datetime, timedelta, timezone
 
 import aiohttp
 
@@ -15,23 +15,26 @@ from .const import (
     DOMAIN,
     DEFAULT_SCAN_INTERVAL_MINUTES,
     IDLE_SCAN_INTERVAL_MINUTES,
+    DEFAULT_BASE_CURRENCY,
 )
+from .fx import build_rate_table
 
 _LOGGER = logging.getLogger(__name__)
 
 CHART_URL = "https://query1.finance.yahoo.com/v8/finance/chart/{symbol}"
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (compatible; HomeAssistant-PortfolioTracker/1.2)"
+    "User-Agent": "Mozilla/5.0 (compatible; HomeAssistant-PortfolioTracker/1.4)"
 }
 
 
 class PortfolioDataCoordinator(DataUpdateCoordinator):
-    """Polls Yahoo Finance for every symbol currently in the portfolio."""
+    """Polls Yahoo Finance for prices, FX, and dividends."""
 
     def __init__(
         self,
         hass: HomeAssistant,
         symbols_getter,
+        base_currency_getter=None,
         scan_minutes: int = DEFAULT_SCAN_INTERVAL_MINUTES,
         idle_minutes: int = IDLE_SCAN_INTERVAL_MINUTES,
     ) -> None:
@@ -42,6 +45,7 @@ class PortfolioDataCoordinator(DataUpdateCoordinator):
             update_interval=timedelta(minutes=scan_minutes),
         )
         self._symbols_getter = symbols_getter
+        self._base_currency_getter = base_currency_getter or (lambda: DEFAULT_BASE_CURRENCY)
         self._scan_minutes = scan_minutes
         self._idle_minutes = idle_minutes
         self._session = async_get_clientsession(hass)
@@ -57,24 +61,43 @@ class PortfolioDataCoordinator(DataUpdateCoordinator):
             self.update_interval = timedelta(minutes=self._idle_minutes)
 
         symbols = self._symbols_getter()
-        if not symbols:
-            return {}
+        base = (self._base_currency_getter() or DEFAULT_BASE_CURRENCY).upper()
 
-        results: dict[str, dict | None] = {}
+        prices: dict[str, dict | None] = {}
+        currencies: set[str] = set()
+        dividends: list[dict] = []
+
         for symbol in symbols:
             try:
-                results[symbol] = await self._fetch_symbol(symbol)
+                data = await self._fetch_symbol(symbol)
+                prices[symbol] = data
+                if data and data.get("currency"):
+                    currencies.add(data["currency"])
+                if data and data.get("dividends"):
+                    dividends.extend(data["dividends"])
             except Exception as err:  # noqa: BLE001
                 _LOGGER.warning("Could not update %s: %s", symbol, err)
-                results[symbol] = None
-        return results
+                prices[symbol] = None
+
+        rates = await build_rate_table(self._session, currencies | {base}, base)
+
+        return {
+            "prices": prices,
+            "fx_rates": rates,
+            "base_currency": base,
+            "dividends": sorted(dividends, key=lambda d: d.get("date") or ""),
+        }
 
     async def _fetch_symbol(self, symbol: str) -> dict:
         url = CHART_URL.format(symbol=symbol)
         try:
             async with self._session.get(
                 url,
-                params={"interval": "1d", "range": "5d"},
+                params={
+                    "interval": "1d",
+                    "range": "1y",
+                    "events": "div",
+                },
                 headers=HEADERS,
                 timeout=aiohttp.ClientTimeout(total=15),
             ) as resp:
@@ -99,6 +122,32 @@ class PortfolioDataCoordinator(DataUpdateCoordinator):
             day_change = price - previous_close
             day_change_pct = (day_change / previous_close) * 100
 
+        # Dividend events from chart
+        divs: list[dict] = []
+        events = (result.get("events") or {}).get("dividends") or {}
+        now = datetime.now(timezone.utc)
+        cutoff = now - timedelta(days=30)
+        horizon = now + timedelta(days=365)
+        for _key, ev in events.items():
+            try:
+                ts = int(ev.get("date", 0))
+                dt = datetime.fromtimestamp(ts, tz=timezone.utc)
+                amount = float(ev.get("amount", 0))
+            except (TypeError, ValueError, OSError):
+                continue
+            # Yahoo chart mainly returns past dividends; keep recent + any future
+            if dt < cutoff:
+                continue
+            divs.append(
+                {
+                    "symbol": symbol,
+                    "amount": amount,
+                    "date": dt.date().isoformat(),
+                    "datetime": dt.isoformat(),
+                    "currency": currency,
+                }
+            )
+
         return {
             "price": price,
             "previous_close": previous_close,
@@ -113,4 +162,28 @@ class PortfolioDataCoordinator(DataUpdateCoordinator):
             "fifty_two_week_low": meta.get("fiftyTwoWeekLow"),
             "regular_market_volume": meta.get("regularMarketVolume"),
             "instrument_type": meta.get("instrumentType"),
+            "dividends": divs,
         }
+
+    # ---- helpers for sensors ----
+
+    def price_data(self, symbol: str) -> dict:
+        data = self.data or {}
+        prices = data.get("prices") or {}
+        # Back-compat if old shape
+        if symbol in data and isinstance(data.get(symbol), dict):
+            return data.get(symbol) or {}
+        return prices.get(symbol) or {}
+
+    def fx_rate(self, currency: str | None) -> float:
+        data = self.data or {}
+        rates = data.get("fx_rates") or {}
+        base = data.get("base_currency") or DEFAULT_BASE_CURRENCY
+        ccy = (currency or base).upper()
+        return float(rates.get(ccy, 1.0))
+
+    def base_currency(self) -> str:
+        return (self.data or {}).get("base_currency") or DEFAULT_BASE_CURRENCY
+
+    def dividends(self) -> list[dict]:
+        return list((self.data or {}).get("dividends") or [])

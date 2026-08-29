@@ -1,8 +1,4 @@
-"""Config flow for Portfolio Tracker.
-
-Initial setup creates an empty portfolio. Day-to-day management (add, buy,
-sell, edit, remove) is done through the integration's Configure options flow.
-"""
+"""Config flow for Portfolio Tracker."""
 from __future__ import annotations
 
 from datetime import date
@@ -12,7 +8,12 @@ import voluptuous as vol
 
 from homeassistant import config_entries
 from homeassistant.core import callback
-from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers.selector import (
+    SelectSelector,
+    SelectSelectorConfig,
+    SelectSelectorMode,
+    SelectOptionDict,
+)
 
 from .const import (
     DOMAIN,
@@ -25,16 +26,28 @@ from .const import (
     CONF_IDLE_SCAN_INTERVAL,
     CONF_REALIZED_GAIN,
     CONF_TRADE_LOG,
+    CONF_BASE_CURRENCY,
     DEFAULT_SCAN_INTERVAL_MINUTES,
     IDLE_SCAN_INTERVAL_MINUTES,
+    DEFAULT_BASE_CURRENCY,
     MAX_TRADE_LOG,
+    SUPPORTED_CURRENCIES,
 )
 
 _LOGGER = logging.getLogger(__name__)
 
+MENU_OPTIONS = [
+    SelectOptionDict(value="add_holding", label="Add a new stock", icon="mdi:plus-circle-outline"),
+    SelectOptionDict(value="buy_shares_symbol", label="Buy more shares", icon="mdi:cart-arrow-down"),
+    SelectOptionDict(value="sell_shares_symbol", label="Sell shares", icon="mdi:cart-arrow-up"),
+    SelectOptionDict(value="edit_holding_symbol", label="Edit shares / cost basis", icon="mdi:pencil-outline"),
+    SelectOptionDict(value="remove_holding", label="Remove a stock", icon="mdi:trash-can-outline"),
+    SelectOptionDict(value="settings", label="Settings (currency & intervals)", icon="mdi:cog-outline"),
+]
+
 
 class PortfolioTrackerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
-    """One-time setup. Only a single Portfolio Tracker instance is supported."""
+    """One-time setup. Only a single instance is supported."""
 
     VERSION = 1
 
@@ -46,7 +59,12 @@ class PortfolioTrackerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             return self.async_create_entry(
                 title="Portfolio Tracker",
                 data={},
-                options={CONF_HOLDINGS: {}},
+                options={
+                    CONF_HOLDINGS: {},
+                    CONF_BASE_CURRENCY: DEFAULT_BASE_CURRENCY,
+                    CONF_REALIZED_GAIN: 0,
+                    CONF_TRADE_LOG: [],
+                },
             )
 
         return self.async_show_form(step_id="user")
@@ -58,34 +76,41 @@ class PortfolioTrackerConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
 
 class PortfolioTrackerOptionsFlowHandler(config_entries.OptionsFlow):
-    """Add stocks, log buys/sells, edit or remove holdings — all from the UI."""
+    """Add / buy / sell / edit / remove holdings and settings."""
 
     def __init__(self) -> None:
         self._pending_symbol: str | None = None
+        self._pending_action: str | None = None
 
     @property
     def _holdings(self) -> dict:
         return dict(self.config_entry.options.get(CONF_HOLDINGS, {}))
 
-    async def _save(self, holdings: dict):
+    async def _save(self, holdings: dict, **extra):
         new_options = dict(self.config_entry.options)
         new_options[CONF_HOLDINGS] = holdings
+        new_options.update(extra)
         return self.async_create_entry(title="", data=new_options)
 
-    # ---------------------------------------------------------------- menu
+    # ---------------------------------------------------------------- menu (with icons)
 
     async def async_step_init(self, user_input=None):
-        return self.async_show_menu(
-            step_id="init",
-            menu_options=[
-                "add_holding",
-                "buy_shares_symbol",
-                "sell_shares_symbol",
-                "edit_holding_symbol",
-                "remove_holding",
-                "settings",
-            ],
+        if user_input is not None:
+            action = user_input.get("action")
+            self._pending_action = action
+            return await getattr(self, f"async_step_{action}")()
+
+        schema = vol.Schema(
+            {
+                vol.Required("action"): SelectSelector(
+                    SelectSelectorConfig(
+                        options=MENU_OPTIONS,
+                        mode=SelectSelectorMode.LIST,
+                    )
+                )
+            }
         )
+        return self.async_show_form(step_id="init", data_schema=schema)
 
     # ---------------------------------------------------------------- add
 
@@ -189,14 +214,11 @@ class PortfolioTrackerOptionsFlowHandler(config_entries.OptionsFlow):
                 proceeds = float(user_input.get("proceeds") or 0)
                 realized = (proceeds - cost_basis_sold) if proceeds else 0.0
                 h[CONF_SHARES] = round(cur_shares - sell_shares, 6)
-                h[CONF_INVESTED] = round(
-                    float(h[CONF_INVESTED]) - cost_basis_sold, 2
-                )
+                h[CONF_INVESTED] = round(float(h[CONF_INVESTED]) - cost_basis_sold, 2)
                 if h[CONF_SHARES] <= 0:
                     holdings.pop(symbol, None)
                 else:
                     holdings[symbol] = h
-                # Persist realized P/L + short trade log on the entry options
                 new_options = dict(self.config_entry.options)
                 new_options[CONF_HOLDINGS] = holdings
                 if proceeds:
@@ -295,23 +317,36 @@ class PortfolioTrackerOptionsFlowHandler(config_entries.OptionsFlow):
     # -------------------------------------------------------------- settings
 
     async def async_step_settings(self, user_input=None):
-        """Configure poll intervals (market open vs closed)."""
         if user_input is not None:
             new_options = dict(self.config_entry.options)
             new_options[CONF_SCAN_INTERVAL] = int(user_input[CONF_SCAN_INTERVAL])
-            new_options[CONF_IDLE_SCAN_INTERVAL] = int(user_input[CONF_IDLE_SCAN_INTERVAL])
+            new_options[CONF_IDLE_SCAN_INTERVAL] = int(
+                user_input[CONF_IDLE_SCAN_INTERVAL]
+            )
+            new_options[CONF_BASE_CURRENCY] = user_input[CONF_BASE_CURRENCY]
             return self.async_create_entry(title="", data=new_options)
 
         opts = self.config_entry.options
         schema = vol.Schema(
             {
                 vol.Required(
+                    CONF_BASE_CURRENCY,
+                    default=opts.get(CONF_BASE_CURRENCY, DEFAULT_BASE_CURRENCY),
+                ): SelectSelector(
+                    SelectSelectorConfig(
+                        options=SUPPORTED_CURRENCIES,
+                        mode=SelectSelectorMode.DROPDOWN,
+                    )
+                ),
+                vol.Required(
                     CONF_SCAN_INTERVAL,
                     default=opts.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_MINUTES),
                 ): vol.All(vol.Coerce(int), vol.Range(min=1, max=60)),
                 vol.Required(
                     CONF_IDLE_SCAN_INTERVAL,
-                    default=opts.get(CONF_IDLE_SCAN_INTERVAL, IDLE_SCAN_INTERVAL_MINUTES),
+                    default=opts.get(
+                        CONF_IDLE_SCAN_INTERVAL, IDLE_SCAN_INTERVAL_MINUTES
+                    ),
                 ): vol.All(vol.Coerce(int), vol.Range(min=5, max=240)),
             }
         )

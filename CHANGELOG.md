@@ -1,21 +1,20 @@
 # Changelog
 
-## 1.3.0 — 2026-08-29
+## 1.4.0 — 2026-08-29
 
 ### Added
-- **Realized P/L** sensor (`sensor.portfolio_realized_gain`) and trade log
-- Sell flow / `sell_shares` service accept **proceeds** to record realized gain
-- 512×512 brand icons (`icon.png`, `brand/icon.png`, `icon@2x.png`)
-- Polished README + HACS `info.md` with logo and frontend card checklist
+- Configure menu options with **Material icons** (list selector)
+- **Base currency** + multi-currency FX (Yahoo pairs, totals in base ccy)
+- **Dividend calendar** entity `calendar.portfolio_dividends`
+- Native **Lovelace card** `portfolio-tracker-card.js`
+- Documentation / issue links → https://github.com/saboaua/Stock-Portfolio-Tracker
 
-### Notes
-- HACS “Icon not available” on custom repos is a known HACS limitation; HA Devices & Services shows the icon correctly.
+### Changed
+- Coordinator data shape includes `prices`, `fx_rates`, `dividends`
+- Portfolio aggregate sensors report values in the configured base currency
+
+## 1.3.0
+- Realized P/L, trade log, 512px icons, polished README
 
 ## 1.2.0
-- Diagnostics, holdings count, allocation %, Yahoo enrichment, update intervals
-
-## 1.1.1
-- Stable entity IDs
-
-## 1.1.0
-- Initial HACS packaging
+- Diagnostics, holdings count, allocation %, update intervals

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 from datetime import date, datetime
+from pathlib import Path
 
 import voluptuous as vol
 
@@ -10,6 +11,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers import config_validation as cv
+from homeassistant.components.http import StaticPathConfig
 
 from .const import (
     DOMAIN,
@@ -22,8 +24,10 @@ from .const import (
     CONF_IDLE_SCAN_INTERVAL,
     CONF_REALIZED_GAIN,
     CONF_TRADE_LOG,
+    CONF_BASE_CURRENCY,
     DEFAULT_SCAN_INTERVAL_MINUTES,
     IDLE_SCAN_INTERVAL_MINUTES,
+    DEFAULT_BASE_CURRENCY,
     MAX_TRADE_LOG,
     SERVICE_BUY,
     SERVICE_SELL,
@@ -32,7 +36,7 @@ from .coordinator import PortfolioDataCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
-PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR]
+PLATFORMS = [Platform.SENSOR, Platform.BINARY_SENSOR, Platform.CALENDAR]
 
 BUY_SCHEMA = vol.Schema(
     {
@@ -64,18 +68,47 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     def get_symbols():
         return list(entry.options.get(CONF_HOLDINGS, {}).keys())
 
+    def get_base_currency():
+        return entry.options.get(CONF_BASE_CURRENCY, DEFAULT_BASE_CURRENCY)
+
     scan = int(entry.options.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL_MINUTES))
     idle = int(entry.options.get(CONF_IDLE_SCAN_INTERVAL, IDLE_SCAN_INTERVAL_MINUTES))
 
-    coordinator = PortfolioDataCoordinator(hass, get_symbols, scan, idle)
+    coordinator = PortfolioDataCoordinator(
+        hass, get_symbols, get_base_currency, scan, idle
+    )
     hass.data[DOMAIN][entry.entry_id] = {"coordinator": coordinator, "entry": entry}
 
     entry.async_on_unload(entry.add_update_listener(_async_update_listener))
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     _register_services(hass)
+    await _async_register_lovelace_card(hass)
 
     _LOGGER.info("Portfolio Tracker %s started", VERSION)
     return True
+
+
+async def _async_register_lovelace_card(hass: HomeAssistant) -> None:
+    """Serve the bundled Lovelace card from /portfolio_tracker_static/."""
+    if hass.data.get(DOMAIN, {}).get("_card_registered"):
+        return
+    www = Path(__file__).parent / "www"
+    if not www.is_dir():
+        return
+    try:
+        await hass.http.async_register_static_paths(
+            [
+                StaticPathConfig(
+                    "/portfolio_tracker_static",
+                    str(www),
+                    cache_headers=False,
+                )
+            ]
+        )
+        hass.data[DOMAIN]["_card_registered"] = True
+        _LOGGER.debug("Registered Lovelace card static path")
+    except Exception as err:  # noqa: BLE001
+        _LOGGER.debug("Static path registration skipped: %s", err)
 
 
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
@@ -86,7 +119,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
     if unload_ok:
         hass.data[DOMAIN].pop(entry.entry_id, None)
-        if not hass.data.get(DOMAIN):
+        if not any(k for k in hass.data.get(DOMAIN, {}) if k != "_card_registered"):
             for service in (SERVICE_BUY, SERVICE_SELL):
                 if hass.services.has_service(DOMAIN, service):
                     hass.services.async_remove(DOMAIN, service)
@@ -152,12 +185,11 @@ def _register_services(hass: HomeAssistant) -> None:
         cost_basis_sold = avg_cost * sell_shares
         proceeds = call.data.get("proceeds")
         if proceeds is None:
-            # Fall back to last known market price × shares when proceeds omitted
             data = hass.data.get(DOMAIN, {}).get(entry.entry_id, {})
             coord = data.get("coordinator")
             price = None
-            if coord and coord.data:
-                price = (coord.data.get(symbol) or {}).get("price")
+            if coord:
+                price = coord.price_data(symbol).get("price")
             proceeds = float(price * sell_shares) if price is not None else cost_basis_sold
         realized = float(proceeds) - cost_basis_sold
 

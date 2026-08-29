@@ -81,7 +81,7 @@ class _BaseHoldingSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def _price_data(self) -> dict:
-        return (self.coordinator.data or {}).get(self._symbol) or {}
+        return self.coordinator.price_data(self._symbol)
 
     @property
     def available(self) -> bool:
@@ -223,7 +223,6 @@ class _BaseTotalSensor(CoordinatorEntity, SensorEntity):
 
     _attr_device_class = SensorDeviceClass.MONETARY
     _attr_state_class = SensorStateClass.MEASUREMENT
-    _attr_native_unit_of_measurement = "USD"
 
     def __init__(self, coordinator, entry):
         super().__init__(coordinator)
@@ -235,21 +234,31 @@ class _BaseTotalSensor(CoordinatorEntity, SensorEntity):
     def _holdings(self) -> dict:
         return self._entry.options.get(CONF_HOLDINGS, {})
 
-    def _position_value(self, symbol, holding):
-        price_data = (self.coordinator.data or {}).get(symbol) or {}
+    def _position_value(self, symbol, holding, *, in_base: bool = True):
+        price_data = self.coordinator.price_data(symbol)
         price = price_data.get("price")
         shares = float(holding.get(CONF_SHARES, 0) or 0)
         if price is None:
             return None
-        return price * shares
+        value = price * shares
+        if in_base:
+            value *= self.coordinator.fx_rate(price_data.get("currency"))
+        return value
 
-    def _day_change_dollar(self, symbol, holding):
-        price_data = (self.coordinator.data or {}).get(symbol) or {}
+    def _day_change_dollar(self, symbol, holding, *, in_base: bool = True):
+        price_data = self.coordinator.price_data(symbol)
         change = price_data.get("day_change")
         shares = float(holding.get(CONF_SHARES, 0) or 0)
         if change is None:
             return 0.0
-        return change * shares
+        value = change * shares
+        if in_base:
+            value *= self.coordinator.fx_rate(price_data.get("currency"))
+        return value
+
+    @property
+    def native_unit_of_measurement(self):
+        return self.coordinator.base_currency()
 
 
 class PortfolioTotalValueSensor(_BaseTotalSensor):
@@ -274,6 +283,8 @@ class PortfolioTotalValueSensor(_BaseTotalSensor):
         return {
             "holdings_count": len(self._holdings),
             "symbols": sorted(self._holdings.keys()),
+            "base_currency": self.coordinator.base_currency(),
+            "fx_rates": (self.coordinator.data or {}).get("fx_rates"),
         }
 
 
@@ -429,7 +440,7 @@ class PortfolioHoldingsTableSensor(_BaseTotalSensor):
         # first pass for allocation
         tmp = []
         for symbol, holding in self._holdings.items():
-            price_data = (self.coordinator.data or {}).get(symbol) or {}
+            price_data = self.coordinator.price_data(symbol)
             price = price_data.get("price") or 0
             shares = float(holding.get(CONF_SHARES, 0) or 0)
             invested = float(holding.get(CONF_INVESTED, 0) or 0)
