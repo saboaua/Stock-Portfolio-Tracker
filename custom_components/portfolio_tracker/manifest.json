@@ -1,12 +1,14 @@
 {
   "domain": "portfolio_tracker",
   "name": "Portfolio Tracker",
-  "codeowners": ["@patrickfortin"],
+  "codeowners": [
+    "@saboaua"
+  ],
   "config_flow": true,
-  "documentation": "https://github.com/patrickfortin/ha-portfolio-tracker",
-  "integration_type": "service",
+  "documentation": "https://github.com/saboaua/Stock-Portfolio-Tracker",
+  "issue_tracker": "https://github.com/saboaua/Stock-Portfolio-Tracker/issues",
   "iot_class": "cloud_polling",
-  "issue_tracker": "https://github.com/patrickfortin/ha-portfolio-tracker/issues",
+  "integration_type": "hub",
   "requirements": [],
   "version": "1.5.3"
 }
