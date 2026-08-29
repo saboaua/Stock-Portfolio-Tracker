@@ -15,7 +15,24 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, VERSION, CONF_HOLDINGS, CONF_SHARES, CONF_INVESTED, CONF_ENTRY_DATE, CONF_REALIZED_GAIN, CONF_TRADE_LOG
+from .const import (
+    DOMAIN,
+    VERSION,
+    CONF_HOLDINGS,
+    CONF_SHARES,
+    CONF_INVESTED,
+    CONF_ENTRY_DATE,
+    CONF_REALIZED_GAIN,
+    CONF_TRADE_LOG,
+    CONF_RETIRE_ENABLED,
+    CONF_RETIRE_HORIZON,
+    CONF_RETIRE_BASELINE,
+    CONF_RETIRE_START_YEAR,
+    CONF_RETIRE_CONTRIBUTION,
+    CONF_RETIRE_SCENARIO,
+    DEFAULT_RETIRE_HORIZON,
+    DEFAULT_RETIRE_SCENARIO,
+)
 from .coordinator import PortfolioDataCoordinator
 
 _LOGGER = logging.getLogger(__name__)
@@ -448,7 +465,6 @@ class PortfolioLastUpdateSensor(CoordinatorEntity, SensorEntity):
 
     @property
     def extra_state_attributes(self):
-        data = self.coordinator.data or {}
         return {
             "last_error": getattr(self.coordinator, "last_error", None),
             "last_update_success": getattr(self.coordinator, "last_update_success", None),

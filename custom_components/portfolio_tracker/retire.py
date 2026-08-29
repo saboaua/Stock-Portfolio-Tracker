@@ -70,11 +70,7 @@ def apex_points(
     """ApexCharts-friendly [timestamp_ms, value] pairs (Jan 1 each year)."""
     points: list[list[int | float]] = []
     for row in year_series(baseline, rate, start_year, end_year, annual_contribution):
-        # Use UTC noon-ish via date — Apex uses local; Jan 1 is fine for yearly
-        ts = int(date(row["year"], 1, 1).toordinal())  # not ms — fix below
-        # JavaScript Date: year, monthIndex 0, day 1
-        # Approximate ms: use a simple epoch calc
-        # 1970-01-01 ordinal = 719163
+        # ApexCharts timestamps are epoch milliseconds (UTC).
         days = date(row["year"], 1, 1).toordinal() - date(1970, 1, 1).toordinal()
         ms = days * 86400000
         points.append([ms, row["value"]])

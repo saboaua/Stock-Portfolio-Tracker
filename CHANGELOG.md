@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.5.1 — 2026-08-29
+
+### Fixed
+- **Retirement sensors were completely non-functional.** `sensor.py` never
+  imported the eight `CONF_RETIRE_*` / `DEFAULT_RETIRE_*` constants that
+  `_RetireMixin._retire_payload()` depends on, so every access of
+  `sensor.portfolio_retire_plan`, `…_retire_progress`, and `…_retire_target`
+  (state, `available`, and attributes) raised `NameError`. Home Assistant
+  swallows that per-entity and shows it as unavailable/unknown, which is why
+  the sensors appeared present but never reported a value. Fixed by adding
+  the missing import in `sensor.py`; verified with a standalone unit test of
+  `retire.py`'s math (unaffected — the bug was purely a wiring issue, not a
+  calculation issue).
+- Dividend calendar horizon: `coordinator.py` computed a 365-day `horizon`
+  cutoff for upcoming dividends but never applied it, so a future dividend
+  arbitrarily far out would not have been filtered out. Now enforced.
+
+### Cleaned up
+- Removed a handful of dead/unused local variables and imports flagged by
+  static analysis (`__init__.py`, `retire.py`, `sensor.py`) — no behavior
+  change, just less noise for anyone reading the code.
+
 ## 1.5.0 — 2026-08-29
 
 ### Added

@@ -154,8 +154,8 @@ class PortfolioDataCoordinator(DataUpdateCoordinator):
                 amount = float(ev.get("amount", 0))
             except (TypeError, ValueError, OSError):
                 continue
-            # Yahoo chart mainly returns past dividends; keep recent + any future
-            if dt < cutoff:
+            # Yahoo chart mainly returns past dividends; keep recent + near-future
+            if dt < cutoff or dt > horizon:
                 continue
             divs.append(
                 {
