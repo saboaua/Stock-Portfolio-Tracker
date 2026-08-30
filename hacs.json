@@ -1,12 +1,6 @@
 {
   "name": "Portfolio Tracker",
   "render_readme": true,
-  "domains": [
-    "sensor",
-    "binary_sensor",
-    "calendar",
-    "button"
-  ],
   "homeassistant": "2024.6.0",
   "zip_release": false,
   "country": []

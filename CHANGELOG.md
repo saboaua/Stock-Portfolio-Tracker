@@ -1,5 +1,56 @@
 # Changelog
 
+## 1.5.7 — 2026-08-30
+
+### Fixed — real HACS/hassfest CI failures from the actual PR run
+
+- **`hacs.json`: removed the `"domains"` key.** It's not part of HACS's
+  schema at all (domains are inferred from `manifest.json` automatically);
+  HACS's own validator rejected it with `extra keys not allowed @
+  data['domains']`.
+- **`manifest.json`: added `"dependencies": ["http"]`.** `__init__.py`
+  calls `hass.http.async_register_static_paths(...)` (to serve the
+  bundled Lovelace card) without declaring `http` as a dependency —
+  hassfest flags any use of a component's API that isn't declared, and
+  this genuinely needed it.
+- **`services.yaml`: `step: 0.0001` → `step: 0.001` on the `shares` field**
+  for both `buy_shares` and `sell_shares`. Confirmed against Home
+  Assistant's actual `NumberSelectorConfig` schema
+  (`homeassistant/helpers/selector.py`): step is validated with
+  `vol.Range(min=1e-3)`, i.e. **0.001 is the smallest legal step value** —
+  0.0001 is below that floor and fails validation outright, independent
+  of the exact error text. Note this only affects the up/down increment
+  buttons in box mode; typing an exact value (e.g. a fractional crypto
+  amount) directly into the field is unaffected.
+- **Investigated but not changed: `target` on services.** The CI log
+  showed `required key not provided at 'buy_shares.target'`, but Home
+  Assistant's current `_SERVICE_SCHEMA`
+  (`homeassistant/helpers/service.py`) defines `target` as
+  `vol.Optional`, not required. Rather than add `target: {}` speculatively
+  — which would make Developer Tools show an entity/device/area picker
+  for services that don't actually target entities, a real (if minor) UX
+  regression — this is left as-is. If it turns out the pinned hassfest
+  version in your workflow genuinely enforces it, that'll show up
+  cleanly in the next CI run now that the `step` issue (a confirmed,
+  independent failure) is no longer confounding the log.
+- Synced the stray `1.5.6` version reference in `info.md` (this file
+  isn't auto-generated from `manifest.json` the way `VERSION` in the
+  Python code is, so it has to be bumped by hand each release).
+
+### Not fixable from files — needs action on the actual GitHub repo
+The CI log also reported two repository-metadata failures that live in
+GitHub's repo settings, not in any file:
+- `<Validation topics> failed: The repository has no valid topics`
+- `<Validation description> failed: The repository has no description`
+
+Fix via **Settings → General** (repo topics) and the **About** panel on
+the repo's main page (short description). Suggested topics:
+`home-assistant`, `hacs`, `hacs-integration`, `home-assistant-integration`,
+`stocks`, `portfolio-tracker`, `finance`, `yahoo-finance`. Suggested
+description: *"Track stocks, ETFs, and crypto in Home Assistant — live
+Yahoo Finance prices, FX conversion, retirement forecasting, and a native
+dashboard card. No API keys required."*
+
 ## 1.5.6 — 2026-08-30
 
 ### Fixed
