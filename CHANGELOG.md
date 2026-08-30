@@ -1,5 +1,68 @@
 # Changelog
 
+## 1.5.4 — 2026-08-30
+
+### HACS store readiness
+Working through the HACS default-store submission checklist:
+- `hacs.json` present at repo root (was already there — verified valid).
+- `manifest.json` confirmed correct: `codeowners: ["@saboaua"]` and
+  `iot_class: "cloud_polling"` (both were already set correctly).
+- Added `.github/workflows/validate.yaml` running `hassfest` and the
+  `hacs/action` validator on every push/PR and daily on a schedule.
+  **Note:** I validated this workflow's own YAML syntax and independently
+  simulated the manifest/hacs.json schema checks these actions run
+  offline (all pass — see "Verified before packaging" below), but I
+  cannot execute GitHub Actions myself from here. You'll need to push
+  this and confirm the green checkmark on your actual repo.
+- **Not done here, needs you:** tagging a GitHub Release, and opening a
+  PR to add this repo to `hacs/default`. Both require write access to
+  GitHub that isn't available in this environment. See the README's
+  "Publishing to HACS" section for exact steps.
+- **Flagging a conflict:** the request asked to both bump this release to
+  `1.5.4` and tag it `v1.0.0`. Those disagree — HACS/AwesomeVersion
+  compares the manifest's `version` against the release tag, and this
+  project already has real version history through `1.5.3.1`. Shipped
+  `manifest.json` as `1.5.4` to match the actual version bump; recommend
+  tagging the release `v1.5.4` to match rather than `v1.0.0`, unless the
+  intent is to deliberately reset public versioning for the HACS debut —
+  in which case `manifest.json` should say `1.0.0` too, not `1.5.4`.
+
+### Branding & documentation
+- Replaced `logo.png` (root and `brand/`) with the new wordmark.
+- Cropped the new logo's square icon mark into a proper `icon.png`
+  (512×512) instead of stretching the wide banner into a square — a
+  distorted stretch would have looked wrong in HA's integration list.
+- Added all 10 UI walkthrough screenshots to `brand/`: `integration_setup`,
+  `integration_screen`, `manage_portfolio_menu`, `add_holding`,
+  `buy_stock`, `sell_stock`, `edit_stock`, `remove_stock`,
+  `component_settings`, `retirement_setting`.
+- Replaced `README.md` with the provided version. Fixed one bug in it
+  while copying: the file was missing its closing ` ``` ` fence at the
+  very end, which would leave the last code block unterminated on GitHub.
+- Synced `info.md`'s version reference to `1.5.4`.
+
+### Roadmap (documented, not yet implemented)
+Added a "Roadmap" section (see README) for the planned "Income Insights &
+Event Automations" release: `sensor.portfolio_tracker_projected_dividend_income`,
+`portfolio_tracker_milestone` / `portfolio_tracker_volatility_alert` HA
+events, LTS/`MONETARY` compliance pass, and dividend yield replacing the
+holdings table's `--` placeholders. These are documented as planned, not
+built into this release — shipping them without full testing would
+conflict with this release's "no broken code" requirement, and each is
+substantial enough (especially the new HA events) to warrant its own
+audit pass rather than being folded in as a side effect of a
+branding/HACS-readiness release.
+
+### Verified before packaging
+`py_compile` and `pyflakes` clean across all 13 Python files (unchanged
+from 1.5.3.1 — this release touched no application logic, only
+`manifest.json`'s version and documentation/branding assets). Manifest
+schema re-validated against hassfest's actual required-key list and
+`iot_class` enum. All dashboard YAML re-validated. New
+`.github/workflows/validate.yaml` YAML-syntax-checked. Confirmed
+`brand/` contains exactly the 11 images referenced by the new README
+(10 screenshots + logo) with no dangling references left unresolved.
+
 ## 1.5.3.1 — 2026-08-30
 
 ### Fixed

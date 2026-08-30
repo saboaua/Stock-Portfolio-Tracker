@@ -153,3 +153,31 @@ type: custom:portfolio-tracker-card
 title: My Portfolio
 view: charts
 range: 1W
+```
+
+---
+
+## Roadmap
+
+**Income Insights & Event Automations** (planned, not yet in this release):
+
+- 🚀 **Dividend Income Tracking** — `sensor.portfolio_tracker_projected_dividend_income`, calculating total projected annual passive payout.
+- 🚀 **Event Triggers** — native HA events `portfolio_tracker_milestone` and `portfolio_tracker_volatility_alert`, for wiring up custom mobile notifications and automations.
+- ⚙️ Enhanced Long-Term Statistics (LTS) compliance across all portfolio sensors (`MONETARY` device class + integer precision defaults).
+- ⚙️ Replace the `--` placeholders in the holdings table view with a dynamic dividend yield per asset.
+
+These are documented here as planned work — see [CHANGELOG.md](./CHANGELOG.md) for why they weren't folded into this release.
+
+---
+
+## Publishing to HACS (maintainer checklist)
+
+For this repository to be installable straight from the HACS default store (rather than as a custom repository):
+
+1. ✅ `hacs.json` committed at repo root.
+2. ✅ `manifest.json` has `"codeowners": ["@saboaua"]` and a valid `"iot_class"`.
+3. ✅ `.github/workflows/validate.yaml` added, running `hassfest` and `hacs/action` on every push/PR. **Push this and confirm it shows a green check on the Actions tab** — that confirmation has to happen on the real repo.
+4. ⬜ Tag a GitHub Release matching `manifest.json`'s version (currently `1.5.4` — see the version-numbering note in `CHANGELOG.md` before choosing a tag).
+5. ⬜ Open a PR against [`hacs/default`](https://github.com/hacs/default) adding `saboaua/Stock-Portfolio-Tracker` alphabetically under `integration`.
+
+Steps 4 and 5 require GitHub write access this environment doesn't have — they need to be done from your own account.
