@@ -40,6 +40,14 @@ Most stock integrations require manual YAML editing or API key setups just to mo
 
 ---
 
+## Support the Project
+
+If you find Portfolio Tracker helpful and want to support its continued development, feel free to buy me a coffee!
+
+<a href="https://ko-fi.com/patrickgfortin" target="_blank"><img src="https://storage.ko-fi.com/cdn/kofi3.png?v=3" height="36" alt="Buy Me a Coffee at ko-fi.com" /></a>
+
+---
+
 ## How It Works: UI Walkthrough
 
 Manage your portfolio using Home Assistant’s built-in UI flow under **Settings → Devices & Services → Portfolio Tracker → Configure**.
