@@ -167,17 +167,3 @@ range: 1W
 - ⚙️ Replace the `--` placeholders in the holdings table view with a dynamic dividend yield per asset.
 
 These are documented here as planned work — see [CHANGELOG.md](./CHANGELOG.md) for why they weren't folded into this release.
-
----
-
-## Publishing to HACS (maintainer checklist)
-
-For this repository to be installable straight from the HACS default store (rather than as a custom repository):
-
-1. ✅ `hacs.json` committed at repo root.
-2. ✅ `manifest.json` has `"codeowners": ["@saboaua"]` and a valid `"iot_class"`.
-3. ✅ `.github/workflows/validate.yaml` added, running `hassfest` and `hacs/action` on every push/PR. **Push this and confirm it shows a green check on the Actions tab** — that confirmation has to happen on the real repo.
-4. ⬜ Tag a GitHub Release matching `manifest.json`'s version (currently `1.5.4` — see the version-numbering note in `CHANGELOG.md` before choosing a tag).
-5. ⬜ Open a PR against [`hacs/default`](https://github.com/hacs/default) adding `saboaua/Stock-Portfolio-Tracker` alphabetically under `integration`.
-
-Steps 4 and 5 require GitHub write access this environment doesn't have — they need to be done from your own account.
