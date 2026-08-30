@@ -12,6 +12,7 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
@@ -50,10 +51,38 @@ async def async_setup_entry(
     ]
     await coordinator.async_config_entry_first_refresh()
 
-    holdings = entry.options.get(CONF_HOLDINGS, {})
+    holdings = entry.options.get(CONF_HOLDINGS, {}) or {}
+    active_symbols = list(holdings.keys())
+    active_slugs = {_slug(symbol) for symbol in active_symbols}
+
+    # --- Differential cleanup: purge registry entries for removed symbols ---
+    # Holding sensors use unique_id patterns:
+    #   {entry_id}_{slug}_price
+    #   {entry_id}_{slug}_position_value
+    entity_reg = er.async_get(hass)
+    entry_prefix = f"{entry.entry_id}_"
+    holding_suffixes = ("_price", "_position_value")
+
+    for reg_entity in er.async_entries_for_config_entry(entity_reg, entry.entry_id):
+        unique_id = reg_entity.unique_id or ""
+        if not unique_id.startswith(entry_prefix):
+            continue
+        rest = unique_id[len(entry_prefix) :]
+        for suffix in holding_suffixes:
+            if not rest.endswith(suffix):
+                continue
+            slug = rest[: -len(suffix)]
+            if slug and slug not in active_slugs:
+                _LOGGER.info(
+                    "Removing stale holding entity %s (unique_id=%s)",
+                    reg_entity.entity_id,
+                    unique_id,
+                )
+                entity_reg.async_remove(reg_entity.entity_id)
+            break
 
     entities: list[SensorEntity] = []
-    for symbol in holdings:
+    for symbol in active_symbols:
         entities.append(PortfolioPriceSensor(coordinator, entry, symbol))
         entities.append(PortfolioPositionSensor(coordinator, entry, symbol))
 

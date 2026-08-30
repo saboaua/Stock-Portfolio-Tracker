@@ -131,6 +131,11 @@ async def _async_register_lovelace_card(hass: HomeAssistant) -> None:
 
 
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Reload the config entry when options change (add/remove/edit holdings).
+
+    Reload re-runs platform async_setup_entry, which purges stale holding
+    entities from the entity registry and creates sensors only for active symbols.
+    """
     await hass.config_entries.async_reload(entry.entry_id)
 
 
