@@ -36,6 +36,7 @@ Most stock integrations require manual YAML editing or API key setups just to mo
 | **Retirement Forecasting** | 4–10 year compound growth projection scenarios with ApexCharts-ready sensors. |
 | **Smart Update Schedules** | Active, Balanced, Conservative, or Custom poll intervals with optional fixed snapshot times. |
 | **Session Tracking** | Native binary sensors for US & EU market session open/close status. |
+| **Event Triggers** | Native HA events `portfolio_tracker_milestone` and `portfolio_tracker_volatility_alert` for mobile notifications and automations. |
 | **Dividends & Realized P/L** | Native dividend calendar integration and sell trade logging with FIFO gain calculations. |
 
 ---
@@ -120,6 +121,66 @@ Configure compound-growth projections (4–10 years) using customizable baseline
 
 ---
 
+
+---
+
+## Event Triggers
+
+Portfolio Tracker fires **native Home Assistant events** after each successful price update so you can drive notifications and automations without polling sensors.
+
+Configure under **Configure → Event triggers**:
+
+| Setting | Default | Meaning |
+| :--- | :--- | :--- |
+| Enable event triggers | On | Master switch |
+| Milestone step | `10000` | Fire when total portfolio value crosses multiples of this amount (base currency) |
+| Volatility threshold | `5` | Fire when portfolio or any holding day-change % exceeds this absolute value |
+
+### Event types
+
+| Event | When it fires |
+| :--- | :--- |
+| `portfolio_tracker_milestone` | Total value crosses a milestone step **up** or **down** (debounced per level) |
+| `portfolio_tracker_volatility_alert` | Portfolio day % **or** any symbol’s day % exceeds the threshold (debounced until the move cools off) |
+
+### Example automation (milestone)
+
+```yaml
+alias: Portfolio milestone notification
+trigger:
+  - platform: event
+    event_type: portfolio_tracker_milestone
+action:
+  - service: notify.mobile_app_your_phone
+    data:
+      title: Portfolio milestone
+      message: >
+        Moved {{ trigger.event.data.direction }} past
+        {{ trigger.event.data.threshold }} {{ trigger.event.data.currency }}
+        (now {{ trigger.event.data.total_value }}).
+```
+
+### Example automation (volatility)
+
+```yaml
+alias: Portfolio volatility alert
+trigger:
+  - platform: event
+    event_type: portfolio_tracker_volatility_alert
+action:
+  - service: notify.mobile_app_your_phone
+    data:
+      title: Portfolio volatility
+      message: >
+        {% if trigger.event.data.scope == 'symbol' %}
+        {{ trigger.event.data.symbol }} moved {{ trigger.event.data.day_change_pct }}% today.
+        {% else %}
+        Portfolio day change {{ trigger.event.data.day_change_pct }}%.
+        {% endif %}
+```
+
+More examples: [`dashboards/event_automations.yaml`](./dashboards/event_automations.yaml).
+
 ## Entity Reference
 
 | Entity | Description / Attributes |
@@ -159,11 +220,10 @@ range: 1W
 
 ## Roadmap
 
-**Income Insights & Event Automations** (planned, not yet in this release):
+**Income Insights** (planned):
 
 - 🚀 **Dividend Income Tracking** — `sensor.portfolio_tracker_projected_dividend_income`, calculating total projected annual passive payout.
-- 🚀 **Event Triggers** — native HA events `portfolio_tracker_milestone` and `portfolio_tracker_volatility_alert`, for wiring up custom mobile notifications and automations.
 - ⚙️ Enhanced Long-Term Statistics (LTS) compliance across all portfolio sensors (`MONETARY` device class + integer precision defaults).
 - ⚙️ Replace the `--` placeholders in the holdings table view with a dynamic dividend yield per asset.
 
-These are documented here as planned work — see [CHANGELOG.md](./CHANGELOG.md) for why they weren't folded into this release.
+**Shipped in 1.5.8:** Event triggers (`portfolio_tracker_milestone`, `portfolio_tracker_volatility_alert`) — see [Event Triggers](#event-triggers) above and [CHANGELOG.md](./CHANGELOG.md).
