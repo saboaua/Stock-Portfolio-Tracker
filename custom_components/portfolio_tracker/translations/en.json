@@ -105,7 +105,8 @@
     "error": {
       "already_exists": "That symbol is already in your portfolio. Use 'Buy more shares' instead.",
       "invalid_shares": "You can't sell more shares than you own.",
-      "invalid_symbol": "Enter a valid ticker symbol."
+      "invalid_symbol": "Enter a valid ticker symbol.",
+      "invalid_invested": "Enter average cost per share, or total amount paid (must be > 0). Re-adding a symbol replaces its previous cost basis."
     }
   }
 }

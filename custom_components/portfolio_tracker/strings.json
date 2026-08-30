@@ -22,10 +22,11 @@
       "add_holding": {
         "title": "Add a new holding",
         "data": {
-          "symbol": "Symbol (e.g. NVDA or BTC-USD)",
-          "shares": "Number of shares / units",
-          "invested": "Total amount invested (cost basis)",
-          "entry_date": "Purchase date (YYYY-MM-DD)"
+          "symbol": "Symbol (Yahoo ticker, e.g. XLK or VUAA.L)",
+          "shares": "Number of shares",
+          "cost_per_share": "Average cost per share (preferred)",
+          "invested": "OR total amount paid for all shares",
+          "entry_date": "Purchase date"
         },
         "description": "Enter a Yahoo Finance symbol.\n\n\u2022 US stocks / ETFs: NVDA, GOOGL, XLK\n\u2022 London listings: VUAA.L\n\u2022 Crypto: BTC-USD, ETH-USD, SOL-USD\n\nShares and total invested (cost basis) are required."
       },
@@ -103,9 +104,10 @@
       "no_holdings": "You don't have any stocks yet. Add one first."
     },
     "error": {
-      "already_exists": "That symbol is already in your portfolio. Use 'Buy more shares' instead.",
+      "already_exists": "That symbol is already in your portfolio. Use Add to replace cost basis, or Buy more shares to average in.",
       "invalid_shares": "You can't sell more shares than you own.",
-      "invalid_symbol": "Enter a valid ticker symbol."
+      "invalid_symbol": "Enter a valid ticker symbol.",
+      "invalid_invested": "Enter average cost per share, or total amount paid (must be > 0). Re-adding a symbol replaces its previous cost basis."
     }
   }
 }

@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.7.2 — 2026-08-30
+
+### Fixed
+- **Re-add same symbol after delete** — Add no longer fails with "already exists"
+  for residual keys; it **replaces** the position (shares + cost basis).
+- **Cost basis entry** — Add form accepts **average cost per share** (preferred)
+  and computes total invested as `shares × cost_per_share`, or total paid.
+  Entering only the share price as "invested" was understating cost basis
+  (e.g. XLK showing +10,000% gain).
+- Case-insensitive symbol matching when replacing holdings.
+- `sensor.portfolio_total_invested` exposes `by_symbol` attribute for verification.
+- Coordinator always reads **live** holdings keys after options changes.
+
 ## 1.5.7.1 — 2026-08-30
 
 ### Changed

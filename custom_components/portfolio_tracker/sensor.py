@@ -355,9 +355,30 @@ class PortfolioTotalInvestedSensor(_BaseTotalSensor):
 
     @property
     def native_value(self):
-        return round(
-            sum(float(h.get(CONF_INVESTED, 0) or 0) for h in self._holdings.values()), 2
-        )
+        holdings = self._holdings
+        total = 0.0
+        for h in holdings.values():
+            try:
+                total += float(h.get(CONF_INVESTED, 0) or 0)
+            except (TypeError, ValueError):
+                continue
+        return round(total, 2)
+
+    @property
+    def extra_state_attributes(self):
+        """Per-symbol cost basis so dashboards/debug can verify the sum."""
+        by_symbol = {}
+        for sym, h in sorted(self._holdings.items()):
+            try:
+                by_symbol[sym] = round(float(h.get(CONF_INVESTED, 0) or 0), 2)
+            except (TypeError, ValueError):
+                by_symbol[sym] = 0.0
+        return {
+            "by_symbol": by_symbol,
+            "holdings_count": len(by_symbol),
+            "symbols": list(by_symbol.keys()),
+            "base_currency": self.coordinator.base_currency(),
+        }
 
 
 class PortfolioTotalGainSensor(_BaseTotalSensor):

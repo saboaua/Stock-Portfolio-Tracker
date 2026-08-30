@@ -156,36 +156,73 @@ class PortfolioTrackerOptionsFlowHandler(config_entries.OptionsFlow):
     # ---------------------------------------------------------------- add
 
     async def async_step_add_holding(self, user_input=None):
+        """Add a new holding, or replace an existing one (re-add after remove).
+
+        Cost basis is stored as **total invested** (what you paid for all shares).
+        Prefer entering average cost per share — total is computed as shares × cost.
+        """
         errors = {}
         if user_input is not None:
             symbol = str(user_input[CONF_SYMBOL]).strip().upper()
             holdings = self._holdings
+            # Case-insensitive de-dupe (XLK vs xlk)
+            existing_key = None
+            for k in list(holdings.keys()):
+                if str(k).upper() == symbol:
+                    existing_key = k
+                    break
+
             if not symbol:
                 errors["base"] = "invalid_symbol"
-            elif symbol in holdings:
-                errors["base"] = "already_exists"
             else:
-                holdings[symbol] = {
-                    CONF_SHARES: float(user_input[CONF_SHARES]),
-                    CONF_INVESTED: float(user_input[CONF_INVESTED]),
-                    CONF_ENTRY_DATE: user_input.get(CONF_ENTRY_DATE)
-                    or str(date.today()),
-                }
-                return await self._save_holdings(holdings)
+                try:
+                    shares = float(user_input[CONF_SHARES])
+                except (TypeError, ValueError):
+                    shares = 0.0
+                if shares <= 0:
+                    errors["base"] = "invalid_shares"
+                else:
+                    cost_per = user_input.get("cost_per_share")
+                    total_in = user_input.get(CONF_INVESTED)
+                    invested = None
+                    try:
+                        if cost_per is not None and float(cost_per) > 0:
+                            invested = round(shares * float(cost_per), 2)
+                        elif total_in is not None and float(total_in) > 0:
+                            invested = round(float(total_in), 2)
+                    except (TypeError, ValueError):
+                        invested = None
+
+                    if invested is None or invested <= 0:
+                        errors["base"] = "invalid_invested"
+                    else:
+                        # Replace prior key (any casing) so re-add after delete
+                        # or correcting basis never leaves a ghost entry
+                        if existing_key is not None:
+                            holdings.pop(existing_key, None)
+                        holdings[symbol] = {
+                            CONF_SHARES: round(shares, 6),
+                            CONF_INVESTED: invested,
+                            CONF_ENTRY_DATE: user_input.get(CONF_ENTRY_DATE)
+                            or str(date.today()),
+                        }
+                        return await self._save_holdings(holdings)
 
         schema = vol.Schema(
             {
                 vol.Required(CONF_SYMBOL): str,
                 vol.Required(CONF_SHARES): vol.Coerce(float),
-                vol.Required(CONF_INVESTED): vol.Coerce(float),
+                vol.Optional("cost_per_share"): vol.Coerce(float),
+                vol.Optional(CONF_INVESTED): vol.Coerce(float),
                 vol.Optional(CONF_ENTRY_DATE, default=str(date.today())): str,
             }
         )
         return self.async_show_form(
-            step_id="add_holding", data_schema=schema, errors=errors
+            step_id="add_holding",
+            data_schema=schema,
+            errors=errors,
         )
 
-    # ---------------------------------------------------------------- buy
 
     async def async_step_buy_shares_symbol(self, user_input=None):
         holdings = self._holdings

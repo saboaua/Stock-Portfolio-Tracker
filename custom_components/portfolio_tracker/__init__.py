@@ -63,10 +63,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data.setdefault(DOMAIN, {})
 
     def get_symbols():
-        return list(entry.options.get(CONF_HOLDINGS, {}).keys())
+        live = hass.config_entries.async_get_entry(entry.entry_id) or entry
+        return list((live.options.get(CONF_HOLDINGS, {}) or {}).keys())
 
     def get_base_currency():
-        return entry.options.get(CONF_BASE_CURRENCY, DEFAULT_BASE_CURRENCY)
+        live = hass.config_entries.async_get_entry(entry.entry_id) or entry
+        return live.options.get(CONF_BASE_CURRENCY, DEFAULT_BASE_CURRENCY)
 
     scan, idle = resolve_scan_intervals(entry.options)
 
