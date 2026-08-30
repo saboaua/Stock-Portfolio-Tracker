@@ -4,9 +4,9 @@ from __future__ import annotations
 from homeassistant.components.button import ButtonEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
 
-from .const import DOMAIN, VERSION
+from .const import DOMAIN
+from .device import device_info as _device_info
 
 
 async def async_setup_entry(
@@ -27,13 +27,7 @@ class PortfolioRefreshButton(ButtonEntity):
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_refresh"
         self.entity_id = "button.portfolio_refresh"
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, entry.entry_id)},
-            name="Portfolio Tracker",
-            manufacturer="Portfolio Tracker",
-            model="Yahoo Finance",
-            sw_version=VERSION,
-        )
+        self._attr_device_info = _device_info(entry)
 
     async def async_press(self) -> None:
         data = self.hass.data.get(DOMAIN, {}).get(self._entry.entry_id, {})

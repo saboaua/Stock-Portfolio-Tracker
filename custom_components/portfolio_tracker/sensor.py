@@ -12,12 +12,10 @@ from homeassistant.components.sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .const import (
     DOMAIN,
-    VERSION,
     CONF_HOLDINGS,
     CONF_SHARES,
     CONF_INVESTED,
@@ -34,6 +32,7 @@ from .const import (
     DEFAULT_RETIRE_SCENARIO,
 )
 from .coordinator import PortfolioDataCoordinator
+from .device import device_info as _device_info
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -74,16 +73,6 @@ async def async_setup_entry(
 
     async_add_entities(entities)
 
-
-def _device_info(entry: ConfigEntry) -> DeviceInfo:
-    return DeviceInfo(
-        identifiers={(DOMAIN, entry.entry_id)},
-        name="Portfolio Tracker",
-        manufacturer="Portfolio Tracker",
-        model="Yahoo Finance",
-        sw_version=VERSION,
-        configuration_url="homeassistant://config/integrations/integration/portfolio_tracker",
-    )
 
 
 class _BaseHoldingSensor(CoordinatorEntity, SensorEntity):

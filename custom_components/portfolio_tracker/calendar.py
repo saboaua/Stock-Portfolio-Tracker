@@ -6,11 +6,11 @@ from datetime import datetime, timedelta, timezone
 from homeassistant.components.calendar import CalendarEntity, CalendarEvent
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN, VERSION
+from .const import DOMAIN
 from .coordinator import PortfolioDataCoordinator
+from .device import device_info as _device_info
 
 
 async def async_setup_entry(
@@ -34,13 +34,7 @@ class PortfolioDividendCalendar(CoordinatorEntity, CalendarEntity):
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_dividends_calendar"
         self.entity_id = "calendar.portfolio_dividends"
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, entry.entry_id)},
-            name="Portfolio Tracker",
-            manufacturer="Portfolio Tracker",
-            model="Yahoo Finance",
-            sw_version=VERSION,
-        )
+        self._attr_device_info = _device_info(entry)
 
     @property
     def event(self) -> CalendarEvent | None:

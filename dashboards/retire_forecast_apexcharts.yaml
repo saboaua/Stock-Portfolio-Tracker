@@ -1,6 +1,12 @@
 # Requires: HACS → ApexCharts Card
-# Configure → Retirement forecast plan (baseline, horizon 4–10, scenario)
-# Entity IDs assume default names; adjust if your install prefixes portfolio_tracker_
+# Configure → Retirement forecast plan (baseline, horizon 4-10, scenario)
+#
+# NOTE: If you upgraded from an older version of this integration,
+# sensor.portfolio_total_value may have registered under a legacy prefixed
+# ID (e.g. sensor.portfolio_tracker_portfolio_total_value) that predates
+# this integration's current naming. Check Settings > Devices & Services >
+# Entities and update the entity id below if yours differs. Fresh installs
+# get the clean "sensor.portfolio_total_value" name shown here.
 
 type: custom:apexcharts-card
 header:
@@ -25,6 +31,16 @@ apex_config:
     shared: true
     x:
       format: yyyy
+  grid:
+    show: true
+    borderColor: 'var(--divider-color, #90a4ae)'
+    strokeDashArray: 3
+    xaxis:
+      lines:
+        show: true
+    yaxis:
+      lines:
+        show: true
   yaxis:
     - labels:
         formatter: |
@@ -37,11 +53,19 @@ series:
     type: line
     color: '#2196f3'
     stroke_width: 4
-    extend_to: now
     show:
       extremas: true
       in_header: true
       legend_value: true
+    # Reads the live current state directly instead of relying on HA's
+    # history/statistics API. graph_span: 11y pushes apexcharts-card to
+    # query long-term statistics, which are empty for a freshly-created or
+    # recently-renamed entity and previously showed "N/A" in the header
+    # even though the entity itself was perfectly valid.
+    data_generator: |
+      const value = parseFloat(entity.state);
+      if (isNaN(value)) return [];
+      return [[new Date().getTime(), value]];
 
   - entity: sensor.portfolio_retire_plan
     name: Conservative 8%

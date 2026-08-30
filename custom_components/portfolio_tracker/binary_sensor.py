@@ -9,21 +9,10 @@ from homeassistant.components.binary_sensor import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.event import async_track_time_interval
 
 from . import market_hours
-from .const import DOMAIN
-
-
-def _device_info(entry: ConfigEntry) -> DeviceInfo:
-    return DeviceInfo(
-        identifiers={(DOMAIN, entry.entry_id)},
-        name="Portfolio Tracker",
-        manufacturer="Custom",
-        model="Portfolio Tracker",
-        sw_version="1.2.0",
-    )
+from .device import device_info as _device_info
 
 
 async def async_setup_entry(

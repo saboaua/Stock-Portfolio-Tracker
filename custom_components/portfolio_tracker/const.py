@@ -1,7 +1,27 @@
 """Constants for Portfolio Tracker."""
+import json
+from pathlib import Path
 
 DOMAIN = "portfolio_tracker"
-VERSION = "1.5.1"
+
+
+def _load_version() -> str:
+    """Read the version from manifest.json - the single source of truth.
+
+    Previously VERSION was a second hardcoded string here that had to be
+    kept in sync with manifest.json by hand; it drifted (manifest said
+    1.5.3, this said 1.5.1) and caused the device page's "Firmware" field
+    to show a stale version. Reading it directly from manifest.json makes
+    that impossible - there is now only one place to bump per release.
+    """
+    try:
+        manifest_path = Path(__file__).parent / "manifest.json"
+        return json.loads(manifest_path.read_text())["version"]
+    except Exception:  # noqa: BLE001 - never let a bad manifest crash setup
+        return "0.0.0"
+
+
+VERSION = _load_version()
 
 CONF_HOLDINGS = "holdings"
 CONF_SYMBOL = "symbol"

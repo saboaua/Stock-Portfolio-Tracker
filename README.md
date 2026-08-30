@@ -31,7 +31,7 @@ Most people install several stock components just to see price, P/L, and a chart
 | **Yahoo Finance** | Live prices without tokens or `yfinance` |
 | **Multi-currency FX** | Pick a base currency; foreign tickers convert automatically |
 | **Native card** | `summary` · `charts` (sparklines) · `holdings` |
-| **Retirement forecast** | 4–10y scenarios + ApexCharts-ready sensors |
+| **Retirement forecast** | 4–10y scenarios + ApexCharts-ready sensors (`sensor.portfolio_retire_plan/progress/target` — fixed in 1.5.1, chart header fixed in 1.5.3.1) |
 | **Update schedule** | Active / Balanced / Conservative / Custom + optional fixed snapshots |
 | **Refresh button** | Force an update anytime (`button.portfolio_refresh`) |
 | **Last update** | Know when data last succeeded (`sensor.portfolio_last_update`) |
@@ -97,4 +97,38 @@ range: 1W
 
 **Docs:** [github.com/saboaua/Stock-Portfolio-Tracker](https://github.com/saboaua/Stock-Portfolio-Tracker)
 
-**Version:** 1.5.0
+**Version:** 1.5.3.1 — see [CHANGELOG.md](./CHANGELOG.md) for what's new.
+
+---
+
+### Device grouping & firmware version
+
+All entities from every platform (sensors, binary sensors, the refresh
+button, the dividend calendar) share one device — "Portfolio Tracker" —
+via a single `device.py` helper, so Home Assistant's device page groups
+them into its automatic Sensors / Binary sensors / Controls / Calendar
+sections. The device page's **Firmware** field reflects the exact version
+you have installed: `const.py` reads it live from `manifest.json` rather
+than a second hardcoded value, so it can't drift out of sync with what
+HACS reports as installed.
+
+### Releasing updates so HACS detects them
+
+HACS always displays whatever version is in your installed
+`manifest.json` — that's automatic, no action needed. What HACS needs to
+show an **"Update available"** badge is a matching GitHub Release:
+
+1. Bump `"version"` in `custom_components/portfolio_tracker/manifest.json`
+   (this is now the *only* place to change — `const.py` reads it
+   automatically, and the device page's firmware field follows).
+2. Commit and push.
+3. Create a Git tag matching the version (e.g. `v1.5.3.1`) and a GitHub
+   Release from that tag.
+4. HACS polls releases periodically; users see the update on their next
+   check.
+
+Stick to standard `MAJOR.MINOR.PATCH` for future releases where possible —
+this release used a four-segment `1.5.3.1` hotfix version to correct a
+release that shipped with no functional changes despite its version bump;
+`AwesomeVersion` (what HACS uses for comparisons) handles it fine, but
+three-segment versions are the safer default going forward.
