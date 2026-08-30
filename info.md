@@ -97,4 +97,4 @@ range: 1W
 
 **Docs:** [github.com/saboaua/Stock-Portfolio-Tracker](https://github.com/saboaua/Stock-Portfolio-Tracker)
 
-**Version:** 1.5.4 — see [CHANGELOG.md](https://github.com/saboaua/Stock-Portfolio-Tracker/blob/main/CHANGELOG.md) for details.
+**Version:** 1.5.6 — see [CHANGELOG.md](https://github.com/saboaua/Stock-Portfolio-Tracker/blob/main/CHANGELOG.md) for details.

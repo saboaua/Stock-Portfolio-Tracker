@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.6 — 2026-08-30
+
+### Fixed
+- **Version alignment** — every release reference now points at **1.5.6**
+  - `manifest.json` (source of truth; `const.VERSION` reads it)
+  - `info.md` version line
+  - Changelog entry for this release
+- Prior drift: docs said `1.5.4` while `manifest.json` was `1.5.5`
+
+### Included from 1.5.5
+- Stale holding sensors removed from the entity registry when a symbol is
+  deleted via Configure (options reload + differential cleanup)
+
 ## 1.5.4 — 2026-08-30
 
 ### HACS store readiness
