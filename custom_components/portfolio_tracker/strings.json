@@ -76,6 +76,15 @@
           "symbol": "Symbol"
         }
       },
+      "event_alerts": {
+        "title": "Event triggers",
+        "description": "Fire native Home Assistant events for automations and mobile notifications: portfolio_tracker_milestone (value crosses step thresholds) and portfolio_tracker_volatility_alert (|day change %| exceeds threshold).",
+        "data": {
+          "events_enabled": "Enable event triggers",
+          "milestone_step": "Milestone step (currency units, e.g. 10000)",
+          "volatility_pct": "Volatility threshold (% day move, portfolio or any symbol)"
+        }
+      },
       "retire_plan": {
         "title": "Retirement forecast plan",
         "description": "Illustrative compound-growth scenarios (4–10 years). Used by ApexCharts and retire sensors. Not financial advice. Leave baseline 0 to use live portfolio value.",

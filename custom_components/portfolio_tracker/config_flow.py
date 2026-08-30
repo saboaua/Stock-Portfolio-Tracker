@@ -62,6 +62,7 @@ MENU_OPTION_LIST = [
     {"value": "remove_holding", "label": "🗑️  Remove a stock"},
     {"value": "settings", "label": "⚙️  Settings (currency & intervals)"},
     {"value": "retire_plan", "label": "🎯  Retirement forecast plan"},
+    {"value": "event_alerts", "label": "🔔  Event triggers (milestones & volatility)"},
 ]
 
 
@@ -543,5 +544,42 @@ class PortfolioTrackerOptionsFlowHandler(config_entries.OptionsFlow):
             }
         )
         return self.async_show_form(step_id="retire_plan", data_schema=schema)
+
+    # -------------------------------------------------------------- events
+
+    async def async_step_event_alerts(self, user_input=None):
+        """Configure milestone and volatility HA event triggers."""
+        opts = self.config_entry.options
+        if user_input is not None:
+            new_options = dict(opts)
+            new_options[CONF_EVENTS_ENABLED] = bool(
+                user_input.get(CONF_EVENTS_ENABLED, True)
+            )
+            new_options[CONF_MILESTONE_STEP] = float(
+                user_input.get(CONF_MILESTONE_STEP, DEFAULT_MILESTONE_STEP)
+            )
+            new_options[CONF_VOLATILITY_PCT] = float(
+                user_input.get(CONF_VOLATILITY_PCT, DEFAULT_VOLATILITY_PCT)
+            )
+            return self.async_create_entry(title="", data=new_options)
+
+        schema = vol.Schema(
+            {
+                vol.Required(
+                    CONF_EVENTS_ENABLED,
+                    default=bool(opts.get(CONF_EVENTS_ENABLED, DEFAULT_EVENTS_ENABLED)),
+                ): bool,
+                vol.Required(
+                    CONF_MILESTONE_STEP,
+                    default=float(opts.get(CONF_MILESTONE_STEP, DEFAULT_MILESTONE_STEP)),
+                ): vol.All(vol.Coerce(float), vol.Range(min=100, max=1_000_000)),
+                vol.Required(
+                    CONF_VOLATILITY_PCT,
+                    default=float(opts.get(CONF_VOLATILITY_PCT, DEFAULT_VOLATILITY_PCT)),
+                ): vol.All(vol.Coerce(float), vol.Range(min=0.5, max=50)),
+            }
+        )
+        return self.async_show_form(step_id="event_alerts", data_schema=schema)
+
 
 

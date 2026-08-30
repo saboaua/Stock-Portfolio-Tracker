@@ -30,6 +30,7 @@ from .const import (
     SERVICE_REFRESH,
 )
 from .coordinator import PortfolioDataCoordinator
+from .events import async_setup_event_listener
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -76,6 +77,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         hass, get_symbols, get_base_currency, scan, idle
     )
     hass.data[DOMAIN][entry.entry_id] = {"coordinator": coordinator, "entry": entry}
+    async_setup_event_listener(hass, entry, coordinator)
 
     # Optional fixed snapshots (open + close-ish) when schedule snapshot is enabled
     if entry.options.get(CONF_SNAPSHOT_ENABLED):

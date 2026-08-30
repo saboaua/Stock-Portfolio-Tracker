@@ -1,0 +1,53 @@
+# Example automations — Event triggers from Portfolio Tracker
+# Settings → Automations → Create → YAML, or paste into automations.yaml
+#
+# Configure thresholds: Integration → Configure → Event triggers
+
+# --- Milestone (e.g. portfolio crosses $10k steps) ---
+# trigger:
+#   - platform: event
+#     event_type: portfolio_tracker_milestone
+# action:
+#   - service: notify.mobile_app_your_phone
+#     data:
+#       title: "Portfolio milestone"
+#       message: >
+#         Portfolio moved {{ trigger.event.data.direction }} past
+#         {{ trigger.event.data.threshold }}
+#         {{ trigger.event.data.currency }}
+#         (now {{ trigger.event.data.total_value }})
+
+- id: portfolio_tracker_milestone_notify
+  alias: Portfolio milestone notification
+  mode: queued
+  trigger:
+    - platform: event
+      event_type: portfolio_tracker_milestone
+  action:
+    - service: persistent_notification.create
+      data:
+        title: "Portfolio milestone"
+        message: >
+          {{ trigger.event.data.direction | title }} past
+          {{ trigger.event.data.threshold }} {{ trigger.event.data.currency }}.
+          Value now {{ trigger.event.data.total_value }}.
+
+- id: portfolio_tracker_volatility_notify
+  alias: Portfolio volatility notification
+  mode: queued
+  trigger:
+    - platform: event
+      event_type: portfolio_tracker_volatility_alert
+  action:
+    - service: persistent_notification.create
+      data:
+        title: "Portfolio volatility"
+        message: >
+          {% if trigger.event.data.scope == 'symbol' %}
+          {{ trigger.event.data.symbol }} moved
+          {{ trigger.event.data.day_change_pct }}% today
+          (threshold {{ trigger.event.data.threshold_pct }}%).
+          {% else %}
+          Portfolio day change {{ trigger.event.data.day_change_pct }}%
+          (threshold {{ trigger.event.data.threshold_pct }}%).
+          {% endif %}

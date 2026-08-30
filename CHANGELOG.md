@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.5.8 — 2026-08-30
+
+### Added
+- **Event triggers** (Configure → Event triggers)
+  - `portfolio_tracker_milestone` — fires when portfolio total value crosses
+    multiples of a configurable step (default 10,000)
+  - `portfolio_tracker_volatility_alert` — fires when portfolio day % or any
+    holding's day % exceeds a threshold (default 5%)
+- Debounced so the same alert is not repeated every poll
+- Automations: use trigger type **Event** with those event types
+
 ## 1.5.7.2 — 2026-08-30
 
 ### Fixed

@@ -91,3 +91,16 @@ CONF_RETIRE_YEARLY_ACTUALS = "retire_yearly_actuals"
 
 DEFAULT_RETIRE_HORIZON = 10
 DEFAULT_RETIRE_SCENARIO = "moderate"
+
+# Native Home Assistant events (for automations / mobile notifications)
+EVENT_MILESTONE = "portfolio_tracker_milestone"
+EVENT_VOLATILITY = "portfolio_tracker_volatility_alert"
+
+CONF_EVENTS_ENABLED = "events_enabled"
+CONF_MILESTONE_STEP = "milestone_step"  # fire each time total value crosses N * step
+CONF_VOLATILITY_PCT = "volatility_pct"  # |day change %| threshold for portfolio or symbol
+CONF_VOLATILITY_SYMBOL = "volatility_watch_symbols"  # optional; empty = portfolio only
+
+DEFAULT_EVENTS_ENABLED = True
+DEFAULT_MILESTONE_STEP = 10000.0  # currency units
+DEFAULT_VOLATILITY_PCT = 5.0
