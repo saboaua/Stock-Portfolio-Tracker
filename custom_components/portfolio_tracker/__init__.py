@@ -130,6 +130,16 @@ async def _async_register_lovelace_card(hass: HomeAssistant) -> None:
         _LOGGER.warning("Lovelace card static path not registered: %s", err)
 
 
+
+async def _async_apply_options(hass: HomeAssistant, entry: ConfigEntry, new_options: dict) -> None:
+    """Persist options and force sensors to re-read holdings/invested totals."""
+    hass.config_entries.async_update_entry(entry, options=new_options)
+    data = hass.data.get(DOMAIN, {}).get(entry.entry_id, {})
+    coordinator = data.get("coordinator")
+    if coordinator is not None:
+        await coordinator.async_request_refresh()
+
+
 async def _async_update_listener(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """Reload the config entry when options change (add/remove/edit holdings).
 
@@ -187,7 +197,7 @@ def _register_services(hass: HomeAssistant) -> None:
                 "date": datetime.now().isoformat(timespec="seconds"),
             },
         )
-        hass.config_entries.async_update_entry(entry, options=new_options)
+        await _async_apply_options(hass, entry, new_options)
 
     async def handle_sell(call: ServiceCall) -> None:
         entry = _get_entry()
@@ -241,7 +251,7 @@ def _register_services(hass: HomeAssistant) -> None:
                 "date": datetime.now().isoformat(timespec="seconds"),
             },
         )
-        hass.config_entries.async_update_entry(entry, options=new_options)
+        await _async_apply_options(hass, entry, new_options)
 
     async def handle_refresh(call: ServiceCall) -> None:
         entry = _get_entry()

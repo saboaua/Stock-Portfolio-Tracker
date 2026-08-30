@@ -5,13 +5,10 @@
     "@saboaua"
   ],
   "config_flow": true,
-  "dependencies": [
-    "http"
-  ],
   "documentation": "https://github.com/saboaua/Stock-Portfolio-Tracker",
   "issue_tracker": "https://github.com/saboaua/Stock-Portfolio-Tracker/issues",
   "iot_class": "cloud_polling",
   "integration_type": "hub",
   "requirements": [],
-  "version": "1.5.7"
+  "version": "1.5.7.1"
 }

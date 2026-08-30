@@ -114,9 +114,17 @@ class _BaseHoldingSensor(CoordinatorEntity, SensorEntity):
         self._attr_device_info = _device_info(entry)
         self._attr_has_entity_name = False
 
+    def _live_entry(self):
+        """Current ConfigEntry from HA (avoids stale options after add/remove)."""
+        if getattr(self, "hass", None) is None:
+            return self._entry
+        live = self.hass.config_entries.async_get_entry(self._entry.entry_id)
+        return live or self._entry
+
     @property
     def _holding(self) -> dict:
-        return self._entry.options.get(CONF_HOLDINGS, {}).get(self._symbol, {})
+        holdings = self._live_entry().options.get(CONF_HOLDINGS, {}) or {}
+        return holdings.get(self._symbol, {})
 
     @property
     def _price_data(self) -> dict:
@@ -193,7 +201,7 @@ class PortfolioPositionSensor(_BaseHoldingSensor):
 
     def _portfolio_total(self) -> float:
         total = 0.0
-        holdings = self._entry.options.get(CONF_HOLDINGS, {})
+        holdings = self._live_entry().options.get(CONF_HOLDINGS, {}) or {}
         for sym, holding in holdings.items():
             pd = self.coordinator.price_data(sym)
             price = pd.get("price")
@@ -269,9 +277,16 @@ class _BaseTotalSensor(CoordinatorEntity, SensorEntity):
         self._attr_device_info = _device_info(entry)
         self._attr_has_entity_name = False
 
+    def _live_entry(self):
+        """Current ConfigEntry from HA (avoids stale options after add/remove)."""
+        if getattr(self, "hass", None) is None:
+            return self._entry
+        live = self.hass.config_entries.async_get_entry(self._entry.entry_id)
+        return live or self._entry
+
     @property
     def _holdings(self) -> dict:
-        return self._entry.options.get(CONF_HOLDINGS, {})
+        return dict(self._live_entry().options.get(CONF_HOLDINGS, {}) or {})
 
     def _position_value(self, symbol, holding, *, in_base: bool = True):
         price_data = self.coordinator.price_data(symbol)
@@ -328,7 +343,8 @@ class PortfolioTotalValueSensor(_BaseTotalSensor):
 
 
 class PortfolioTotalInvestedSensor(_BaseTotalSensor):
-    _attr_state_class = SensorStateClass.TOTAL
+    # Cost basis rises and falls with add/remove — not a cumulative TOTAL.
+    _attr_state_class = SensorStateClass.MEASUREMENT
 
     def __init__(self, coordinator, entry):
         super().__init__(coordinator, entry)
@@ -517,9 +533,14 @@ class PortfolioHoldingsTableSensor(CoordinatorEntity, SensorEntity):
         # holdings config — even if the last Yahoo poll failed (show last rows / zeros).
         return self.coordinator is not None
 
+    def _live_entry(self):
+        if getattr(self, "hass", None) is None:
+            return self._entry
+        return self.hass.config_entries.async_get_entry(self._entry.entry_id) or self._entry
+
     @property
     def _holdings(self) -> dict:
-        return self._entry.options.get(CONF_HOLDINGS, {}) or {}
+        return dict(self._live_entry().options.get(CONF_HOLDINGS, {}) or {})
 
     @property
     def native_value(self):
@@ -676,7 +697,8 @@ class _RetireMixin:
         from datetime import date as date_cls
         from .retire import build_plan_payload
 
-        opts = self._entry.options
+        _entry = self.hass.config_entries.async_get_entry(self._entry.entry_id) if getattr(self, "hass", None) else None
+        opts = (_entry or self._entry).options
         if not opts.get(CONF_RETIRE_ENABLED, True):
             return {}
 

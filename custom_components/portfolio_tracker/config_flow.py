@@ -105,8 +105,30 @@ class PortfolioTrackerOptionsFlowHandler(config_entries.OptionsFlow):
         return dict(self.config_entry.options.get(CONF_HOLDINGS, {}))
 
     async def _save_holdings(self, holdings: dict):
+        """Persist holdings and normalize invested/shares so totals stay accurate."""
+        normalized: dict = {}
+        for symbol, raw in (holdings or {}).items():
+            if not symbol or not isinstance(raw, dict):
+                continue
+            sym = str(symbol).strip().upper()
+            try:
+                shares = float(raw.get(CONF_SHARES, 0) or 0)
+            except (TypeError, ValueError):
+                shares = 0.0
+            try:
+                invested = float(raw.get(CONF_INVESTED, 0) or 0)
+            except (TypeError, ValueError):
+                invested = 0.0
+            # Drop empty positions so total invested does not keep ghost cost basis
+            if shares <= 0 and invested <= 0:
+                continue
+            normalized[sym] = {
+                CONF_SHARES: round(shares, 6),
+                CONF_INVESTED: round(invested, 2),
+                CONF_ENTRY_DATE: raw.get(CONF_ENTRY_DATE) or None,
+            }
         new_options = dict(self.config_entry.options)
-        new_options[CONF_HOLDINGS] = holdings
+        new_options[CONF_HOLDINGS] = normalized
         return self.async_create_entry(title="", data=new_options)
 
     # ---------------------------------------------------------------- menu
