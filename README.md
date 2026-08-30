@@ -16,119 +16,131 @@
 
 ---
 
-### Why this integration
+## Overview
 
-Most people install several stock components just to see price, P/L, and a chart.  
-**Portfolio Tracker** keeps it in one place: manage positions in the UI, pull Yahoo Finance data (no API key), convert currencies, watch market hours, and use a built-in Lovelace card.
+Most stock integrations require manual YAML editing or API key setups just to monitor prices, P/L, and basic charts.  
 
----
-
-### Features
-
-| | |
-|:--|:--|
-| **Configure UI** | Add · buy · sell · edit · remove holdings — no YAML for day-to-day trades |
-| **Yahoo Finance** | Live prices without tokens or `yfinance` |
-| **Multi-currency FX** | Pick a base currency; foreign tickers convert automatically |
-| **Native card** | `summary` · `charts` (sparklines) · `holdings` |
-| **Retirement forecast** | 4–10y scenarios + ApexCharts-ready sensors (`sensor.portfolio_retire_plan/progress/target` — fixed in 1.5.1, chart header fixed in 1.5.3.1) |
-| **Update schedule** | Active / Balanced / Conservative / Custom + optional fixed snapshots |
-| **Refresh button** | Force an update anytime (`button.portfolio_refresh`) |
-| **Last update** | Know when data last succeeded (`sensor.portfolio_last_update`) |
-| **Error alerts** | Persistent notification if Yahoo refreshes keep failing |
-| **Dividends** | `calendar.portfolio_dividends` |
-| **Realized P/L** | Tracked on sells with a short trade log |
-| **Market sessions** | US & EU open/closed sensors + schedules |
-| **Crypto** | Same form as stocks — e.g. `BTC-USD`, `ETH-USD` |
+**Portfolio Tracker** brings your entire investment portfolio directly into Home Assistant's native UI. It fetches live Yahoo Finance market data without external API tokens, handles multi-currency conversions automatically, tracks stock market trading sessions, and includes an intuitive dashboard card.
 
 ---
 
-### Entities (overview)
+## Core Features
 
-| Entity | Role |
-|--------|------|
-| `sensor.<symbol>_price` | Live price + 52w / volume / name |
-| `sensor.<symbol>_position_value` | Value, shares, gain, allocation % |
-| `sensor.portfolio_total_value` | Portfolio in base currency |
-| `sensor.portfolio_total_invested` | Cost basis |
-| `sensor.portfolio_total_gain` | Unrealized P/L |
-| `sensor.portfolio_day_change` | Day P/L |
-| `sensor.portfolio_realized_gain` | Realized + recent trades |
-| `sensor.portfolio_holdings_count` | Open positions |
-| `sensor.portfolio_holdings_table` | Rows for tables / card |
-| `sensor.portfolio_last_update` | Last successful refresh |
-| `button.portfolio_refresh` | Manual Yahoo refresh |
-| `binary_sensor.us_market_open` / `eu_market_open` | Session flags |
-| `sensor.us_market_session` / `eu_market_session` | open/closed + times |
-| `calendar.portfolio_dividends` | Dividend events |
+| Feature | Description |
+| :--- | :--- |
+| **No-Code Configuration** | Add, buy, sell, edit, or remove holdings directly via Home Assistant UI modal flows. |
+| **Yahoo Finance Engine** | Live prices for worldwide stocks, ETFs, and cryptocurrencies without requiring `yfinance` or API keys. |
+| **Multi-Currency FX** | Automatic currency conversion into your designated portfolio base currency. |
+| **Native Lovelace Card** | Includes `summary`, `charts` (sparklines), and `holdings` views. |
+| **Retirement Forecasting** | 4–10 year compound growth projection scenarios with ApexCharts-ready sensors. |
+| **Smart Update Schedules** | Active, Balanced, Conservative, or Custom poll intervals with optional fixed snapshot times. |
+| **Session Tracking** | Native binary sensors for US & EU market session open/close status. |
+| **Dividends & Realized P/L** | Native dividend calendar integration and sell trade logging with FIFO gain calculations. |
 
 ---
 
-### Lovelace card
+## How It Works: UI Walkthrough
 
-**Settings → Dashboards → ⋮ → Resources → Add**
+Manage your portfolio using Home Assistant’s built-in UI flow under **Settings → Devices & Services → Portfolio Tracker → Configure**.
 
-| Field | Value |
-|-------|--------|
-| URL | `/portfolio_tracker_static/portfolio-tracker-card.js` |
-| Type | JavaScript Module |
+### 1. Integration Dashboard & Overview
+Once installed, Portfolio Tracker aggregates all sensors, binary sensors, controls, and calendars into a single unified Home Assistant device.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/saboaua/Stock-Portfolio-Tracker/main/brand/integration_setup.png" alt="Integration Setup Card" width="380">
+  <br>
+  <img src="https://raw.githubusercontent.com/saboaua/Stock-Portfolio-Tracker/main/brand/integration_screen.png" alt="Integration Devices Screen" width="700">
+</p>
+
+---
+
+### 2. Management Hub
+Clicking **Configure** opens the main action menu where you can manage positions or adjust global configuration settings.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/saboaua/Stock-Portfolio-Tracker/main/brand/manage_portfolio_menu.png" alt="Manage Portfolio Menu" width="450">
+</p>
+
+---
+
+### 3. Adding & Managing Holdings
+
+* **Add a New Stock / ETF / Crypto:** Search by Yahoo Finance ticker (e.g., `NVDA`, `VUAA.L`, `BTC-USD`), enter shares/units, total cost basis, and purchase date.
+* **Buy / Sell / Edit / Remove:** Adjust position sizes or log sells to calculate realized P/L automatically.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/saboaua/Stock-Portfolio-Tracker/main/brand/add_holding.png" alt="Add Holding Modal" width="420">
+</p>
+
+<table align="center">
+  <tr>
+    <td align="center"><b>Buy More Shares</b></td>
+    <td align="center"><b>Sell Shares</b></td>
+  </tr>
+  <tr>
+    <td><img src="https://raw.githubusercontent.com/saboaua/Stock-Portfolio-Tracker/main/brand/buy_stock.png" width="340"></td>
+    <td><img src="https://raw.githubusercontent.com/saboaua/Stock-Portfolio-Tracker/main/brand/sell_stock.png" width="340"></td>
+  </tr>
+  <tr>
+    <td align="center"><b>Edit Shares / Cost Basis</b></td>
+    <td align="center"><b>Remove Stock</b></td>
+  </tr>
+  <tr>
+    <td><img src="https://raw.githubusercontent.com/saboaua/Stock-Portfolio-Tracker/main/brand/edit_stock.png" width="340"></td>
+    <td><img src="https://raw.githubusercontent.com/saboaua/Stock-Portfolio-Tracker/main/brand/remove_stock.png" width="340"></td>
+  </tr>
+</table>
+
+---
+
+### 4. Global Settings & Schedule
+Customize base currency, poll schedules during market hours, custom refresh intervals, and optional fixed daily snapshot times (09:35, 12:00, 16:05 local time).
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/saboaua/Stock-Portfolio-Tracker/main/brand/component_settings.png" alt="Component Settings" width="450">
+</p>
+
+---
+
+### 5. Retirement Forecast Planning
+Configure compound-growth projections (4–10 years) using customizable baseline values, annual contributions, and benchmark scenarios (e.g., Nasdaq 15%) to automatically generate retirement sensors for your dashboards.
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/saboaua/Stock-Portfolio-Tracker/main/brand/retirement_setting.png" alt="Retirement Forecast Settings" width="450">
+</p>
+
+---
+
+## Entity Reference
+
+| Entity | Description / Attributes |
+| :--- | :--- |
+| `sensor.<symbol>_price` | Current market price, 52-week highs/lows, volume |
+| `sensor.<symbol>_position_value` | Market value, shares held, total unrealized gain, weight % |
+| `sensor.portfolio_total_value` | Aggregate portfolio value in base currency |
+| `sensor.portfolio_total_invested` | Total cost basis across open positions |
+| `sensor.portfolio_total_gain` | Total unrealized gain/loss ($ and %) |
+| `sensor.portfolio_day_change` | Combined day change ($ and %) |
+| `sensor.portfolio_realized_gain` | Realized profit/loss history |
+| `sensor.portfolio_holdings_table` | JSON table array formatted for dashboard views |
+| `sensor.portfolio_last_update` | Timestamp of last successful Yahoo sync |
+| `button.portfolio_refresh` | Trigger manual price updates |
+| `binary_sensor.us_market_open` / `eu_market_open` | Session active indicators |
+| `calendar.portfolio_dividends` | Scheduled ex-dividend dates and payouts |
+
+---
+
+## Dashboard Card Setup
+
+1. Go to **Settings → Dashboards → ⋮ (Top Right) → Resources → Add Resource**
+2. Configure as follows:
+   * **URL:** `/portfolio_tracker_static/portfolio-tracker-card.js`
+   * **Resource Type:** `JavaScript Module`
+
+3. Add the card to your dashboard:
 
 ```yaml
 type: custom:portfolio-tracker-card
 title: My Portfolio
 view: charts
 range: 1W
-```
-
-| `view` | Description |
-|--------|-------------|
-| `summary` | Totals, unrealized / day P/L, market pills |
-| `charts` | Ticker grid with price, % change, sparklines |
-| `holdings` | Shares, avg cost, invested, market value, gain |
-
----
-
-### Quick start
-
-1. HACS → custom repository → install → **restart HA**  
-2. **Settings → Devices & Services → Add Integration → Portfolio Tracker**  
-3. **Configure** → add symbols (e.g. `NVDA`, `VUAA.L`, `BTC-USD`)  
-4. Optional: add the card resource above  
-
-**Docs:** [github.com/saboaua/Stock-Portfolio-Tracker](https://github.com/saboaua/Stock-Portfolio-Tracker)
-
-**Version:** 1.5.3.1 — see [CHANGELOG.md](./CHANGELOG.md) for what's new.
-
----
-
-### Device grouping & firmware version
-
-All entities from every platform (sensors, binary sensors, the refresh
-button, the dividend calendar) share one device — "Portfolio Tracker" —
-via a single `device.py` helper, so Home Assistant's device page groups
-them into its automatic Sensors / Binary sensors / Controls / Calendar
-sections. The device page's **Firmware** field reflects the exact version
-you have installed: `const.py` reads it live from `manifest.json` rather
-than a second hardcoded value, so it can't drift out of sync with what
-HACS reports as installed.
-
-### Releasing updates so HACS detects them
-
-HACS always displays whatever version is in your installed
-`manifest.json` — that's automatic, no action needed. What HACS needs to
-show an **"Update available"** badge is a matching GitHub Release:
-
-1. Bump `"version"` in `custom_components/portfolio_tracker/manifest.json`
-   (this is now the *only* place to change — `const.py` reads it
-   automatically, and the device page's firmware field follows).
-2. Commit and push.
-3. Create a Git tag matching the version (e.g. `v1.5.3.1`) and a GitHub
-   Release from that tag.
-4. HACS polls releases periodically; users see the update on their next
-   check.
-
-Stick to standard `MAJOR.MINOR.PATCH` for future releases where possible —
-this release used a four-segment `1.5.3.1` hotfix version to correct a
-release that shipped with no functional changes despite its version bump;
-`AwesomeVersion` (what HACS uses for comparisons) handles it fine, but
-three-segment versions are the safer default going forward.
