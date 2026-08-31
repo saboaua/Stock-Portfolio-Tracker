@@ -128,6 +128,10 @@ Configure compound-growth projections (4–10 years) using customizable baseline
 
 Portfolio Tracker fires **native Home Assistant events** after each successful price update so you can drive notifications and automations without polling sensors.
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/saboaua/Stock-Portfolio-Tracker/main/brand/event_triggers.png" alt="Event Trigger Settings" width="450">
+</p>
+
 Configure under **Configure → Event triggers**:
 
 | Setting | Default | Meaning |
