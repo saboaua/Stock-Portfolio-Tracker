@@ -1,6 +1,54 @@
 # Changelog
 
+## 1.5.8.2 — 2026-08-31
+
+### Fixed
+Carries forward the audit fixes from 1.5.8.1 as a clean, standalone
+tagged release (rather than a note appended to a prior version):
+- `manifest.json`: `"dependencies": ["http"]` present — required because
+  `__init__.py` calls `hass.http.async_register_static_paths(...)`
+  unconditionally to serve the bundled Lovelace card.
+- `services.yaml`: `step: 0.001` on the `shares` field for both
+  `buy_shares` and `sell_shares` (was `0.0001`, which is below Home
+  Assistant's actual `NumberSelectorConfig` floor of `vol.Range(min=1e-3)`
+  and fails schema validation).
+- `.github/workflows/validate.yaml` present (hassfest + HACS validation).
+
+### Verified
+Full audit re-run clean: `py_compile` + `pyflakes` across all 14 Python
+files, `manifest.json`/`hacs.json`/`strings.json`/translations all valid
+JSON, all 19 dashboard YAML files valid, `retire.py` math re-checked
+standalone. Add/remove/re-add holding behavior re-confirmed via a
+standalone simulation of the actual `add_holding`/`_save_holdings`/
+`remove_holding` logic — no duplicate/ghost entries, case-insensitive
+de-dupe works, and `sensor.portfolio_total_value` /
+`sensor.portfolio_total_invested` recompute correctly from the live
+holdings dict in every scenario tested.
+
 ## 1.5.8.1 — 2026-08-30
+
+### Audit notes (packaging this release)
+Two regressions were found and corrected while auditing this exact
+package — both are re-fixes of issues already resolved in 1.5.7, which
+had been reverted somewhere in the 1.5.7.1–1.5.8 chain:
+- `manifest.json` was missing `"dependencies": ["http"]` again. The code
+  still calls `hass.http.async_register_static_paths(...)` unconditionally
+  in `__init__.py` to serve the bundled Lovelace card, so this is
+  required — confirmed by re-checking the actual usage, not assumed.
+- `services.yaml`'s `shares` field `step` was back to `0.0001` on both
+  `buy_shares` and `sell_shares`. Re-verified against Home Assistant's
+  actual `NumberSelectorConfig` schema (`vol.Range(min=1e-3)`): 0.001 is
+  the hard floor, 0.0001 fails regardless of exact error wording.
+- `.github/workflows/validate.yaml` was absent from this zip (as it has
+  been from every zip export so far) — re-added.
+
+Also concretely verified (not just read) via a standalone simulation
+mirroring `add_holding`/`_save_holdings`/`remove_holding` exactly: add →
+remove → re-add the same symbol produces no duplicate/ghost entries, case
+mismatches (`xlk` vs `XLK`) correctly de-dupe to one entry, and both
+`sensor.portfolio_total_value` and `sensor.portfolio_total_invested`
+recompute from the live post-change holdings dict with the exact expected
+totals in every scenario tested.
 
 ### Fixed
 - **Event triggers options flow** — missing imports for `CONF_EVENTS_ENABLED` /

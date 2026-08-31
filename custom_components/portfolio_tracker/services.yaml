@@ -18,7 +18,7 @@ buy_shares:
       selector:
         number:
           min: 0
-          step: 0.0001
+          step: 0.001
           mode: box
     cost:
       name: Total cost
@@ -51,7 +51,7 @@ sell_shares:
       selector:
         number:
           min: 0
-          step: 0.0001
+          step: 0.001
           mode: box
     proceeds:
       name: Total proceeds
