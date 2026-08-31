@@ -94,6 +94,7 @@ async def async_setup_entry(
     entities.append(PortfolioLastUpdateSensor(coordinator, entry))
     entities.append(PortfolioRealizedGainSensor(coordinator, entry))
     entities.append(PortfolioHoldingsTableSensor(coordinator, entry))
+    entities.append(PortfolioTopMoversSensor(coordinator, entry))
     entities.append(MarketSessionSensor(entry, "us", "US Market Session"))
     entities.append(MarketSessionSensor(entry, "eu", "EU Market Session"))
     entities.append(PortfolioRetirePlanSensor(coordinator, entry))
@@ -636,6 +637,121 @@ class PortfolioHoldingsTableSensor(CoordinatorEntity, SensorEntity):
             )
         return {"rows": rows, "holdings_count": len(rows)}
 
+
+
+
+class PortfolioTopMoversSensor(CoordinatorEntity, SensorEntity):
+    """Ranked day movers for holdings — feeds Top Movers bar charts.
+
+    Non-breaking addition: uses the same coordinator price_data and live
+    holdings as the holdings table. State is the symbol with the largest
+    absolute day % move; attributes expose a sorted `movers` list for
+    ApexCharts / button-card dashboards.
+    """
+
+    _attr_has_entity_name = False
+    _attr_device_class = None
+    _attr_state_class = None
+    _attr_native_unit_of_measurement = None
+    _attr_icon = "mdi:chart-bar"
+    _attr_name = "Portfolio Top Movers"
+
+    def __init__(self, coordinator, entry):
+        super().__init__(coordinator)
+        self._entry = entry
+        self._attr_unique_id = f"{entry.entry_id}_top_movers"
+        self._attr_device_info = _device_info(entry)
+        self.entity_id = "sensor.portfolio_top_movers"
+
+    def _live_entry(self):
+        if getattr(self, "hass", None) is None:
+            return self._entry
+        return self.hass.config_entries.async_get_entry(self._entry.entry_id) or self._entry
+
+    @property
+    def _holdings(self) -> dict:
+        return dict(self._live_entry().options.get(CONF_HOLDINGS, {}) or {})
+
+    @property
+    def available(self) -> bool:
+        return self.coordinator is not None
+
+    def _build_movers(self) -> list[dict]:
+        movers: list[dict] = []
+        for symbol, holding in self._holdings.items():
+            try:
+                price_data = self.coordinator.price_data(symbol) or {}
+            except Exception:  # noqa: BLE001
+                price_data = {}
+            try:
+                price = float(price_data.get("price") or 0)
+            except (TypeError, ValueError):
+                price = 0.0
+            try:
+                shares = float(holding.get(CONF_SHARES, 0) or 0)
+            except (TypeError, ValueError):
+                shares = 0.0
+            try:
+                day_change = float(price_data.get("day_change") or 0)
+            except (TypeError, ValueError):
+                day_change = 0.0
+            try:
+                day_change_pct = float(price_data.get("day_change_pct") or 0)
+            except (TypeError, ValueError):
+                day_change_pct = 0.0
+            market_value = price * shares
+            movers.append(
+                {
+                    "symbol": symbol,
+                    "name": price_data.get("short_name") or symbol,
+                    "day_change_pct": round(day_change_pct, 2),
+                    "day_change": round(day_change, 4),
+                    "day_gain_dollar": round(day_change * shares, 2),
+                    "price": round(price, 4),
+                    "shares": round(shares, 4),
+                    "market_value": round(market_value, 2),
+                    "currency": price_data.get("currency") or "USD",
+                }
+            )
+        # Display order like broker apps: highest day % on the left
+        movers.sort(key=lambda m: m["day_change_pct"], reverse=True)
+        return movers
+
+    @property
+    def native_value(self):
+        movers = self._build_movers()
+        if not movers:
+            return "none"
+        # Largest absolute move (most interesting "top mover")
+        top = max(movers, key=lambda m: abs(m["day_change_pct"]))
+        return top["symbol"]
+
+    @property
+    def extra_state_attributes(self):
+        movers = self._build_movers()
+        if not movers:
+            return {
+                "movers": [],
+                "symbols": [],
+                "day_change_pcts": [],
+                "count": 0,
+                "top_gainer": None,
+                "top_loser": None,
+            }
+        gainers = [m for m in movers if m["day_change_pct"] > 0]
+        losers = [m for m in movers if m["day_change_pct"] < 0]
+        top_gainer = max(movers, key=lambda m: m["day_change_pct"]) if movers else None
+        top_loser = min(movers, key=lambda m: m["day_change_pct"]) if movers else None
+        return {
+            "movers": movers,
+            "symbols": [m["symbol"] for m in movers],
+            "day_change_pcts": [m["day_change_pct"] for m in movers],
+            "count": len(movers),
+            "top_gainer": top_gainer["symbol"] if top_gainer and top_gainer["day_change_pct"] > 0 else None,
+            "top_loser": top_loser["symbol"] if top_loser and top_loser["day_change_pct"] < 0 else None,
+            "gainers_count": len(gainers),
+            "losers_count": len(losers),
+        }
 
 
 class MarketSessionSensor(SensorEntity):

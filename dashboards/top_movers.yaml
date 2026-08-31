@@ -1,0 +1,116 @@
+# Top Movers — ApexCharts bar chart (requires HACS: apexcharts-card)
+# Entity: sensor.portfolio_top_movers (added in v1.5.9)
+type: custom:apexcharts-card
+header:
+  show: true
+  title: YOUR TOP MOVERS
+  show_states: false
+  colorize_states: false
+graph_span: 1d
+apex_config:
+  chart:
+    type: bar
+    height: 220
+    toolbar:
+      show: false
+    background: transparent
+  plotOptions:
+    bar:
+      columnWidth: 28%
+      borderRadius: 3
+      colors:
+        ranges:
+          - from: -100
+            to: -0.0001
+            color: '#ef5350'
+          - from: 0
+            to: 100
+            color: '#26a69a'
+  dataLabels:
+    enabled: true
+    offsetY: -18
+    style:
+      fontSize: 12px
+      fontWeight: 700
+      colors:
+        - '#26a69a'
+    formatter: |
+      EVAL:function (val) {
+        if (val == null) return '';
+        const n = Number(val);
+        const sign = n > 0 ? '+' : '';
+        return sign + n.toFixed(1) + '%';
+      }
+  grid:
+    show: true
+    borderColor: 'rgba(148,163,184,0.25)'
+    strokeDashArray: 4
+    xaxis:
+      lines:
+        show: false
+    yaxis:
+      lines:
+        show: true
+  xaxis:
+    labels:
+      style:
+        colors: '#e2e8f0'
+        fontSize: '13px'
+        fontWeight: 600
+    axisBorder:
+      show: false
+    axisTicks:
+      show: false
+  yaxis:
+    show: false
+    min: |
+      EVAL:function(min) { return Math.min(min, 0) - 0.5; }
+    max: |
+      EVAL:function(max) { return Math.max(max, 0) + 0.5; }
+  tooltip:
+    enabled: true
+    y:
+      formatter: |
+        EVAL:function (val) {
+          if (val == null) return '';
+          const n = Number(val);
+          const sign = n > 0 ? '+' : '';
+          return sign + n.toFixed(2) + '%';
+        }
+  legend:
+    show: false
+series:
+  - entity: sensor.portfolio_top_movers
+    name: Day %
+    type: column
+    show:
+      legend_value: false
+      in_header: false
+    data_generator: |
+      const st = entity;
+      const symbols = (st && st.attributes && st.attributes.symbols) || [];
+      const pcts = (st && st.attributes && st.attributes.day_change_pcts) || [];
+      const points = [];
+      for (let i = 0; i < symbols.length; i++) {
+        points.push([i, Number(pcts[i]) || 0]);
+      }
+      return points;
+    color: '#26a69a'
+card_mod:
+  style: |
+    ha-card {
+      background: #1a1d23;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.06);
+      box-shadow: none;
+      padding: 8px 8px 4px 8px;
+    }
+    .header {
+      letter-spacing: 0.12em;
+      font-size: 12px !important;
+      font-weight: 600 !important;
+      color: #94a3b8 !important;
+      text-transform: uppercase;
+    }
+grid_options:
+  columns: full

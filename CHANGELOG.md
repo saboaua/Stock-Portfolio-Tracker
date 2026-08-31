@@ -1,5 +1,27 @@
 # Changelog
 
+## 1.5.9 — 2026-08-31
+
+### Added
+- **Top Movers** — `sensor.portfolio_top_movers` ranks open holdings by day change %.
+  - State: symbol with the largest absolute day move
+  - Attributes: `movers`, `symbols`, `day_change_pcts`, `top_gainer`, `top_loser`
+- Dashboard examples: `dashboards/top_movers.yaml` (ApexCharts) and
+  `dashboards/top_movers_button_card.yaml` (exact bar styling)
+
+### Fixed
+- **Day change vs Yahoo/broker** — `day_change` / `day_change_pct` no longer use
+  `meta.chartPreviousClose` (that field is the close *before the chart range*,
+  e.g. ~1 year ago when `range=1y`). Previous session close is taken from the
+  daily series (`closes[-2]`), then `regularMarketPreviousClose` /
+  `previousClose`, and only then `chartPreviousClose` as a last resort.
+  Fixes `sensor.portfolio_day_change`, holdings table day columns, top movers,
+  and per-symbol day attributes so they match broker session P/L.
+
+### Notes
+- Non-breaking for config/entities: additive Top Movers sensor + corrected
+  day-change math only.
+
 ## 1.5.8.3 — 2026-08-31
 
 ### Changed

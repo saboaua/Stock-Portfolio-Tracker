@@ -1,13 +1,17 @@
 {
   "domain": "portfolio_tracker",
   "name": "Portfolio Tracker",
-  "codeowners": ["@saboaua"],
+  "codeowners": [
+    "@saboaua"
+  ],
   "config_flow": true,
-  "dependencies": ["http"],
+  "dependencies": [
+    "http"
+  ],
   "documentation": "https://github.com/saboaua/Stock-Portfolio-Tracker",
   "integration_type": "hub",
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/saboaua/Stock-Portfolio-Tracker/issues",
   "requirements": [],
-  "version": "1.5.8.3"
+  "version": "1.5.9"
 }

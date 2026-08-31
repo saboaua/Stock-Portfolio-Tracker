@@ -36,6 +36,7 @@ Most stock integrations require manual YAML editing or API key setups just to mo
 | **Retirement Forecasting** | 4–10 year compound growth projection scenarios with ApexCharts-ready sensors. |
 | **Smart Update Schedules** | Active, Balanced, Conservative, or Custom poll intervals with optional fixed snapshot times. |
 | **Session Tracking** | Native binary sensors for US & EU market session open/close status. |
+| **Top Movers** | Ranked day % bar chart for open holdings (`sensor.portfolio_top_movers`). |
 | **Event Triggers** | Native HA events `portfolio_tracker_milestone` and `portfolio_tracker_volatility_alert` for mobile notifications and automations. |
 | **Dividends & Realized P/L** | Native dividend calendar integration and sell trade logging with FIFO gain calculations. |
 

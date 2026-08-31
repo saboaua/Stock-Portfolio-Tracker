@@ -121,25 +121,49 @@ class PortfolioDataCoordinator(DataUpdateCoordinator):
             result = payload["chart"]["result"][0]
             meta = result["meta"]
             price = meta.get("regularMarketPrice")
-            previous_close = meta.get("chartPreviousClose", meta.get("previousClose"))
             currency = meta.get("currency")
         except (KeyError, IndexError, TypeError) as err:
             raise UpdateFailed(f"Unexpected response shape for {symbol}") from err
 
-        # Sparkline: last closes from the daily series (up to 30 points)
+        # Daily closes: used for sparkline AND true prior-session close.
+        # Do NOT use meta.chartPreviousClose for day change — with range=1y that
+        # field is the close *before the chart window* (~1 year ago), not yesterday.
         sparkline: list[float] = []
+        closes: list[float] = []
         try:
             quotes = (result.get("indicators") or {}).get("quote") or []
-            closes = (quotes[0].get("close") if quotes else None) or []
-            sparkline = [float(c) for c in closes if c is not None][-30:]
+            raw_closes = (quotes[0].get("close") if quotes else None) or []
+            closes = [float(c) for c in raw_closes if c is not None]
+            sparkline = closes[-30:]
         except (TypeError, ValueError, IndexError, AttributeError):
+            closes = []
             sparkline = []
+
+        # Previous trading session close (priority order):
+        # 1) Second-to-last daily bar — matches broker/Yahoo day % for US names
+        # 2) regularMarketPreviousClose / previousClose when Yahoo provides them
+        # 3) chartPreviousClose only as last resort (often wrong for long ranges)
+        previous_close = None
+        if len(closes) >= 2:
+            previous_close = closes[-2]
+        if previous_close is None:
+            previous_close = meta.get("regularMarketPreviousClose") or meta.get(
+                "previousClose"
+            )
+        if previous_close is None:
+            previous_close = meta.get("chartPreviousClose")
 
         day_change = None
         day_change_pct = None
         if price is not None and previous_close:
-            day_change = price - previous_close
-            day_change_pct = (day_change / previous_close) * 100
+            try:
+                previous_close = float(previous_close)
+                day_change = float(price) - previous_close
+                if previous_close:
+                    day_change_pct = (day_change / previous_close) * 100
+            except (TypeError, ValueError):
+                day_change = None
+                day_change_pct = None
 
         # Dividend events from chart
         divs: list[dict] = []
