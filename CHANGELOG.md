@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.8.1 — 2026-08-30
+
+### Fixed
+- **Event triggers options flow** — missing imports for `CONF_EVENTS_ENABLED` /
+  milestone & volatility settings caused "Unknown error occurred" when opening
+  Configure → Event triggers. Imports restored.
+
 ## 1.5.8 — 2026-08-30
 
 ### Added
