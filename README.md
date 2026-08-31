@@ -198,6 +198,7 @@ More examples: [`dashboards/event_automations.yaml`](./dashboards/event_automati
 | `sensor.portfolio_day_change` | Combined day change ($ and %) |
 | `sensor.portfolio_realized_gain` | Realized profit/loss history |
 | `sensor.portfolio_holdings_table` | JSON table array formatted for dashboard views |
+| `sensor.portfolio_top_movers` | Ranked day movers for charts (`movers`, `symbols`, `day_change_pcts`) |
 | `sensor.portfolio_last_update` | Timestamp of last successful Yahoo sync |
 | `button.portfolio_refresh` | Trigger manual price updates |
 | `binary_sensor.us_market_open` / `eu_market_open` | Session active indicators |
@@ -223,6 +224,86 @@ range: 1W
 
 ---
 
+## Top Movers
+
+Ranks your open holdings by **day change %** (gainers on the left, losers on the right).
+
+| Item | Detail |
+| :--- | :--- |
+| **Sensor** | `sensor.portfolio_top_movers` |
+| **State** | Symbol with the largest absolute day move |
+| **Attributes** | `movers`, `symbols`, `day_change_pcts`, `top_gainer`, `top_loser` |
+
+**Requirement:** [button-card](https://github.com/custom-cards/button-card) (HACS → Frontend).
+
+### Card YAML (broker-style bars)
+
+Add a **Manual** card and paste:
+
+```yaml
+type: custom:button-card
+entity: sensor.portfolio_top_movers
+show_name: false
+show_icon: false
+show_state: false
+show_label: true
+tap_action:
+  action: more-info
+styles:
+  card:
+    - background: '#1a1d23'
+    - border-radius: 16px
+    - border: 1px solid rgba(255,255,255,0.06)
+    - box-shadow: none
+    - padding: 16px 18px 20px 18px
+  grid:
+    - grid-template-areas: '"l"'
+    - grid-template-columns: 1fr
+  label:
+    - justify-self: stretch
+label: |
+  [[[
+    const s = entity;
+    const movers = (s && s.attributes && s.attributes.movers) || [];
+    if (!movers.length) {
+      return `<div style="color:#94a3b8;font-size:13px;">No holdings yet</div>`;
+    }
+    const pcts = movers.map(m => Number(m.day_change_pct) || 0);
+    const maxAbs = Math.max(0.5, ...pcts.map(p => Math.abs(p)));
+    const bars = movers.map(m => {
+      const pct = Number(m.day_change_pct) || 0;
+      const h = Math.max(4, Math.round((Math.abs(pct) / maxAbs) * 72));
+      const up = pct >= 0;
+      const color = up ? '#26a69a' : '#ef5350';
+      const label = (up && pct > 0 ? '+' : '') + pct.toFixed(1) + '%';
+      return `
+        <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;flex:1;min-width:0;gap:6px;">
+          <div style="font-size:12px;font-weight:700;color:${color};white-space:nowrap;">${label}</div>
+          <div style="width:18px;height:80px;display:flex;align-items:flex-end;justify-content:center;">
+            <div style="width:14px;height:${h}px;background:${color};border-radius:3px;"></div>
+          </div>
+          <div style="font-size:12px;font-weight:700;color:#e2e8f0;letter-spacing:0.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">${m.symbol}</div>
+        </div>`;
+    }).join('');
+    return `
+      <div style="width:100%;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div style="font-size:12px;font-weight:700;letter-spacing:0.14em;color:#94a3b8;">YOUR TOP MOVERS</div>
+          <div style="opacity:0.45;font-size:16px;color:#94a3b8;">☰</div>
+        </div>
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:8px;min-height:130px;border-top:1px dashed rgba(148,163,184,0.2);border-bottom:1px dashed rgba(148,163,184,0.2);padding:10px 4px 8px 4px;background:repeating-linear-gradient(to bottom, transparent, transparent 24px, rgba(148,163,184,0.12) 24px, rgba(148,163,184,0.12) 25px);">
+          ${bars}
+        </div>
+      </div>`;
+  ]]]
+grid_options:
+  columns: full
+```
+
+Optional ApexCharts variant: [`dashboards/top_movers.yaml`](./dashboards/top_movers.yaml).
+
+---
+
 ## Roadmap
 
 **Income Insights** (planned):
@@ -231,4 +312,6 @@ range: 1W
 - ⚙️ Enhanced Long-Term Statistics (LTS) compliance across all portfolio sensors (`MONETARY` device class + integer precision defaults).
 - ⚙️ Replace the `--` placeholders in the holdings table view with a dynamic dividend yield per asset.
 
-**Shipped in 1.5.8:** Event triggers (`portfolio_tracker_milestone`, `portfolio_tracker_volatility_alert`) — see [Event Triggers](#event-triggers) above and [CHANGELOG.md](./CHANGELOG.md).
+**Shipped in 1.5.8:** Event triggers (`portfolio_tracker_milestone`, `portfolio_tracker_volatility_alert`) — see [Event Triggers](#event-triggers).
+
+**Shipped in 1.5.9:** Top Movers (`sensor.portfolio_top_movers`) + day-change baseline fix — see [Top Movers](#top-movers) and [CHANGELOG.md](./CHANGELOG.md).
