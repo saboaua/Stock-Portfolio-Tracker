@@ -1,20 +1,41 @@
 # Portfolio Tracker — complete sample dashboard (sections layout)
 #
-# Install via HACS (Frontend) as needed:
-#   - button-card
-#   - card-mod
-#   - layout-card
-#   - vertical-stack-in-card
-#   - mushroom
-#   - auto-entities
-#   - flex-table-card
-#   - mini-graph-card
-#   - apexcharts-card
-# Optional (not from this integration):
-#   - easy-stock-card
-#   - any Yahoo Finance sensors referenced as sensor.yahoofinance_*
+# =============================================================================
+# REQUIRED HACS COMPONENTS (install before using this dashboard)
+# =============================================================================
 #
-# Core entities used from Portfolio Tracker:
+# HACS → Frontend (Dashboard):
+#   ┌─────────────────────────┬──────────────────────────────────────────────┐
+#   │ Package                 │ Used for                                     │
+#   ├─────────────────────────┼──────────────────────────────────────────────┤
+#   │ button-card             │ Market status, overview, tiles, top movers   │
+#   │ card-mod                │ CSS / styling on cards                       │
+#   │ layout-card             │ Responsive grid layouts                      │
+#   │ vertical-stack-in-card  │ Stack cards inside one outer card            │
+#   │ Mushroom                │ Title card (mushroom-title-card)             │
+#   │ auto-entities           │ Auto-build holding tiles from sensors        │
+#   │ flex-table-card         │ Holdings Overview table                      │
+#   │ mini-graph-card         │ 24h portfolio value sparkline                │
+#   │ apexcharts-card         │ Retirement / forecast charts                 │
+#   └─────────────────────────┴──────────────────────────────────────────────┘
+#
+# HACS → Integrations (optional — only if you keep those cards in the YAML):
+#   ┌─────────────────────────┬──────────────────────────────────────────────┐
+#   │ Package                 │ Used for                                     │
+#   ├─────────────────────────┼──────────────────────────────────────────────┤
+#   │ Easy Stock              │ custom:easy-stock-card sparkline tiles       │
+#   │ Yahoo Finance           │ sensor.yahoofinance_* distribution card      │
+#   └─────────────────────────┴──────────────────────────────────────────────┘
+#   If you do not use Easy Stock / Yahoo Finance, delete those two cards from
+#   the dashboard YAML so HA does not report missing custom cards.
+#
+# This integration (already installed):
+#   Portfolio Tracker — all sensor.portfolio_* and binary_sensor.*_market_open
+#
+# Install tip: HACS → search each name → Download → restart Home Assistant
+# when prompted. Frontend cards usually only need a browser refresh.
+#
+# Core entities from Portfolio Tracker:
 #   binary_sensor.us_market_open / eu_market_open
 #   sensor.portfolio_total_value / total_gain / day_change / total_invested
 #   sensor.*_position_value
@@ -22,8 +43,15 @@
 #   sensor.portfolio_top_movers
 #   sensor.portfolio_retire_plan
 #
-# How to use: Dashboard → ⋮ → Raw configuration editor → paste under `views:`
-# or merge this view into an existing dashboard.
+# How to use:
+#   1. Install the HACS packages above
+#   2. Dashboard → ⋮ → Raw configuration editor
+#   3. Paste this file (starts with `views:`) or merge into an existing view
+#   4. Save and refresh the browser
+#
+# Note: sensor.pportfolio_total_invested typo is fixed to
+#       sensor.portfolio_total_invested in this export.
+#
 
 views:
   - type: sections
