@@ -2,6 +2,45 @@
 
 Copy any YAML into a **Manual** card, or paste a full view file into a dashboard.
 
+## HACS components required for the complete dashboard
+
+Install these from **HACS → Frontend** before using
+[`portfolio_dashboard_complete.yaml`](./portfolio_dashboard_complete.yaml):
+
+| HACS package | Category | Required for complete dashboard |
+|--------------|----------|----------------------------------|
+| **button-card** | Frontend | Yes — market status, overview, tiles, top movers |
+| **card-mod** | Frontend | Yes — card CSS / styling |
+| **layout-card** | Frontend | Yes — responsive grids |
+| **vertical-stack-in-card** | Frontend | Yes — stacked sections |
+| **Mushroom** | Frontend | Yes — title card |
+| **auto-entities** | Frontend | Yes — auto holding tiles |
+| **flex-table-card** | Frontend | Yes — holdings table |
+| **mini-graph-card** | Frontend | Yes — 24h value graph |
+| **apexcharts-card** | Frontend | Yes — retirement / forecast charts |
+
+**Optional** (only if you keep those cards in the YAML):
+
+| HACS package | Category | Notes |
+|--------------|----------|--------|
+| **Easy Stock** | Integration | `custom:easy-stock-card` block |
+| **Yahoo Finance** | Integration | `sensor.yahoofinance_*` distribution card |
+
+If you skip Easy Stock / Yahoo Finance, **remove those two cards** from the
+complete dashboard YAML so Lovelace does not error on missing types.
+
+**Portfolio Tracker** (this integration) must already be installed and configured
+with holdings.
+
+### Quick install order
+
+1. HACS → Frontend → download each **Required** package above  
+2. Restart Home Assistant if HACS asks (frontend-only often needs only a refresh)  
+3. Confirm Portfolio Tracker sensors exist (`sensor.portfolio_total_value`, etc.)  
+4. Paste `portfolio_dashboard_complete.yaml` into a dashboard raw editor  
+
+---
+
 ## Entity reference
 
 | Entity | Purpose |
@@ -27,7 +66,7 @@ Copy any YAML into a **Manual** card, or paste a full view file into a dashboard
 
 | File | What it is | HACS frontend |
 |------|------------|---------------|
-| **`portfolio_dashboard_complete.yaml`** | **Full sections dashboard** (markets, overview, tiles, table, top movers, retirement) | button-card, card-mod, layout-card, vertical-stack-in-card, mushroom, auto-entities, flex-table-card, mini-graph-card, apexcharts-card |
+| **`portfolio_dashboard_complete.yaml`** | **Full sections dashboard** (markets, overview, tiles, table, top movers, retirement) | See table above |
 | `native_card.yaml` | Built-in card (`summary` / `charts` / `holdings`) | none |
 | `entities_simple.yaml` | Pure HA entities + history graph | none |
 | `summary_stats.yaml` | Hero gradient total / gain / day | button-card |
@@ -50,12 +89,13 @@ Copy any YAML into a **Manual** card, or paste a full view file into a dashboard
 
 Use [`portfolio_dashboard_complete.yaml`](./portfolio_dashboard_complete.yaml) as a full **sections** view:
 
-1. Create a new dashboard (or edit an existing one)
-2. Open **Raw configuration editor**
-3. Paste the contents (starts with `views:`)
-4. Install the HACS frontend cards listed in the file header
+1. Install all **Required** HACS Frontend packages listed above  
+2. Create a new dashboard (or edit an existing one)  
+3. Open **Raw configuration editor**  
+4. Paste the contents (starts with `views:`)  
+5. Save and hard-refresh the browser  
 
-Optional blocks in that sample (`easy-stock-card`, `sensor.yahoofinance_*`) need those integrations; remove those cards if you do not use them.
+Optional blocks (`easy-stock-card`, `sensor.yahoofinance_*`) need those integrations; remove those cards if unused.
 
 ## Minimal install (no HACS frontend)
 
@@ -63,9 +103,9 @@ Optional blocks in that sample (`easy-stock-card`, `sensor.yahoofinance_*`) need
 2. `entities_simple.yaml`  
 3. `dividend_calendar.yaml`
 
-## Recommended HACS frontend packs
+## Recommended HACS frontend packs (summary)
 
-- **Core UX:** `button-card`, `card_mod`, `mushroom`  
+- **Core UX:** `button-card`, `card-mod`, `Mushroom`  
 - **Tables / grids:** `flex-table-card`, `auto-entities`, `layout-card`  
 - **Stacks:** `vertical-stack-in-card`  
-- **Charts:** `apexcharts-card`, `mini-graph-card`
+- **Charts:** `apexcharts-card`, `mini-graph-card`  
