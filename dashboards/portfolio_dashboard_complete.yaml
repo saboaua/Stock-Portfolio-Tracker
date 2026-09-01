@@ -1,29 +1,1057 @@
 # Portfolio Tracker — complete sample dashboard (sections layout)
 #
-# FULL FILE: Download or copy the complete YAML from the project release / package:
-#   portfolio_dashboard_complete.yaml (~51 KB)
-# Or paste from your working dashboard (Raw configuration editor export).
-#
-# This placeholder is kept so the path and HACS docs link resolve. Replace this
-# file on main with the full dashboard YAML when uploading via GitHub UI:
-#   dashboards/ → Upload files → portfolio_dashboard_complete.yaml
-#
 # Install via HACS (Frontend) as needed:
-#   - button-card, card-mod, layout-card, vertical-stack-in-card
-#   - mushroom, auto-entities, flex-table-card
-#   - mini-graph-card, apexcharts-card
-# Optional: easy-stock-card, sensor.yahoofinance_* (remove those cards if unused)
+#   - button-card
+#   - card-mod
+#   - layout-card
+#   - vertical-stack-in-card
+#   - mushroom
+#   - auto-entities
+#   - flex-table-card
+#   - mini-graph-card
+#   - apexcharts-card
+# Optional (not from this integration):
+#   - easy-stock-card
+#   - any Yahoo Finance sensors referenced as sensor.yahoofinance_*
 #
-# Core Portfolio Tracker entities:
+# Core entities used from Portfolio Tracker:
 #   binary_sensor.us_market_open / eu_market_open
 #   sensor.portfolio_total_value / total_gain / day_change / total_invested
-#   sensor.*_position_value, sensor.portfolio_holdings_table
-#   sensor.portfolio_top_movers, sensor.portfolio_retire_plan
+#   sensor.*_position_value
+#   sensor.portfolio_holdings_table
+#   sensor.portfolio_top_movers
+#   sensor.portfolio_retire_plan
 #
-# How to use:
-#   1. Dashboard → ⋮ → Raw configuration editor
-#   2. Paste the full file contents (starts with `views:`)
-#   3. Save
-#
-# Fix applied in the sample export: sensor.pportfolio_total_invested →
-# sensor.portfolio_total_invested
+# How to use: Dashboard → ⋮ → Raw configuration editor → paste under `views:`
+# or merge this view into an existing dashboard.
+
+views:
+  - type: sections
+    sections:
+      - type: grid
+        cards:
+          - type: custom:vertical-stack-in-card
+            cards:
+              - type: custom:layout-card
+                layout_type: custom:grid-layout
+                layout:
+                  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr))
+                  grid-gap: 16px
+                  justify-content: center
+                  justify-items: center
+                  mediaquery:
+                    '(max-width: 768px)':
+                      grid-template-columns: 1fr
+                cards:
+                  - type: custom:button-card
+                    entity: binary_sensor.us_market_open
+                    show_name: false
+                    show_icon: false
+                    show_state: false
+                    show_label: true
+                    triggers_update: all
+                    tap_action:
+                      action: more-info
+                    card_mod:
+                      style: |
+                        :host {
+                          width: 100% !important;
+                          max-width: 500px !important;
+                          display: block !important;
+                          margin: 0 auto !important;
+                        }
+                    styles:
+                      card:
+                        - background: transparent
+                        - padding: 0
+                        - box-shadow: none
+                        - border: none
+                        - width: 100%
+                    label: |
+                      [[[
+                        const s = states['binary_sensor.us_market_open']
+                              || states['binary_sensor.portfolio_tracker_us_market_open'];
+                        const isOpen = s?.state === 'on';
+                        const color = isOpen ? '#059669' : '#dc2626';
+                        const bg = isOpen ? 'rgba(5,150,105,0.12)' : 'rgba(220,38,38,0.12)';
+                        const labelText = isOpen ? 'CLOSES IN' : 'OPENS IN';
+                        const targetIso = isOpen
+                          ? (s?.attributes?.next_close || null)
+                          : (s?.attributes?.next_open || null);
+                        let timeStr = '—';
+                        if (targetIso) {
+                          const target = new Date(targetIso);
+                          const diffMs = Math.max(0, target - Date.now());
+                          const totalMin = Math.floor(diffMs / 60000);
+                          const days = Math.floor(totalMin / 1440);
+                          const hours = Math.floor((totalMin % 1440) / 60);
+                          const minutes = totalMin % 60;
+                          timeStr = (days > 0 ? days + 'd ' : '') +
+                                    String(hours).padStart(2, '0') + 'h ' +
+                                    String(minutes).padStart(2, '0') + 'm';
+                        }
+                        const dotAnim = isOpen ? 'animation: pulseUS 1.6s ease-in-out infinite;' : '';
+                        return `
+                          <style>
+                            @keyframes pulseUS {
+                              0% { box-shadow: 0 0 0 0 ${color}55; }
+                              70% { box-shadow: 0 0 0 6px transparent; }
+                              100% { box-shadow: 0 0 0 0 transparent; }
+                            }
+                          </style>
+                          <div style="position:relative; overflow:hidden; width:100%; height:92px; box-sizing:border-box; background:var(--ha-card-background, var(--card-background-color, #eef1f6)); border:1px solid var(--divider-color, rgba(15, 23, 42, 0.06)); border-radius:16px;">
+                            <div style="position:absolute; top:0; left:0; width:5px; height:100%; background:${color};"></div>
+                            <div style="display:flex; align-items:center; justify-content:space-between; width:100%; height:100%; box-sizing:border-box; padding:0 24px; gap:16px;">
+                              <div style="display:flex; align-items:center; gap:14px; min-width:0;">
+                                <span style="font-size:28px; flex-shrink:0; line-height:1;">🇺🇸</span>
+                                <span style="display:inline-flex; align-items:center; justify-content:center; width:95px; height:32px; background:${bg}; color:${color}; font-size:14px; font-weight:800; letter-spacing:0.4px; border-radius:20px; white-space:nowrap; box-sizing:border-box;">
+                                  <span style="display:inline-block; width:9px; height:9px; border-radius:50%; background:${color}; margin-right:7px; flex-shrink:0; ${dotAnim}"></span>${isOpen ? 'OPEN' : 'CLOSED'}
+                                </span>
+                              </div>
+                              <div style="text-align:center; flex-shrink:0; white-space:nowrap;">
+                                <div style="font-size:11px; font-weight:700; color:var(--secondary-text-color, #94a3b8); letter-spacing:0.5px; margin-bottom:2px; line-height:1;">${labelText}</div>
+                                <div style="font-size:24px; font-weight:800; color:var(--primary-text-color, #0f172a); font-variant-numeric:tabular-nums; line-height:1.2;">${timeStr}</div>
+                              </div>
+                            </div>
+                          </div>
+                        `;
+                      ]]]
+                  - type: custom:button-card
+                    entity: binary_sensor.eu_market_open
+                    show_name: false
+                    show_icon: false
+                    show_state: false
+                    show_label: true
+                    triggers_update: all
+                    tap_action:
+                      action: more-info
+                    card_mod:
+                      style: |
+                        :host {
+                          width: 100% !important;
+                          max-width: 500px !important;
+                          display: block !important;
+                          margin: 0 auto !important;
+                        }
+                    styles:
+                      card:
+                        - background: transparent
+                        - padding: 0
+                        - box-shadow: none
+                        - border: none
+                        - width: 100%
+                    label: |
+                      [[[
+                        const s = states['binary_sensor.eu_market_open']
+                              || states['binary_sensor.portfolio_tracker_eu_market_open'];
+                        const isOpen = s?.state === 'on';
+                        const color = isOpen ? '#059669' : '#dc2626';
+                        const bg = isOpen ? 'rgba(5,150,105,0.12)' : 'rgba(220,38,38,0.12)';
+                        const labelText = isOpen ? 'CLOSES IN' : 'OPENS IN';
+                        const targetIso = isOpen
+                          ? (s?.attributes?.next_close || null)
+                          : (s?.attributes?.next_open || null);
+                        let timeStr = '—';
+                        if (targetIso) {
+                          const target = new Date(targetIso);
+                          const diffMs = Math.max(0, target - Date.now());
+                          const totalMin = Math.floor(diffMs / 60000);
+                          const days = Math.floor(totalMin / 1440);
+                          const hours = Math.floor((totalMin % 1440) / 60);
+                          const minutes = totalMin % 60;
+                          timeStr = (days > 0 ? days + 'd ' : '') +
+                                    String(hours).padStart(2, '0') + 'h ' +
+                                    String(minutes).padStart(2, '0') + 'm';
+                        }
+                        const dotAnim = isOpen ? 'animation: pulseEU 1.6s ease-in-out infinite;' : '';
+                        return `
+                          <style>
+                            @keyframes pulseEU {
+                              0% { box-shadow: 0 0 0 0 ${color}55; }
+                              70% { box-shadow: 0 0 0 6px transparent; }
+                              100% { box-shadow: 0 0 0 0 transparent; }
+                            }
+                          </style>
+                          <div style="position:relative; overflow:hidden; width:100%; height:92px; box-sizing:border-box; background:var(--ha-card-background, var(--card-background-color, #eef1f6)); border:1px solid var(--divider-color, rgba(15, 23, 42, 0.06)); border-radius:16px;">
+                            <div style="position:absolute; top:0; left:0; width:5px; height:100%; background:${color};"></div>
+                            <div style="display:flex; align-items:center; justify-content:space-between; width:100%; height:100%; box-sizing:border-box; padding:0 24px; gap:16px;">
+                              <div style="display:flex; align-items:center; gap:14px; min-width:0;">
+                                <span style="font-size:28px; flex-shrink:0; line-height:1;">🇪🇺</span>
+                                <span style="display:inline-flex; align-items:center; justify-content:center; width:95px; height:32px; background:${bg}; color:${color}; font-size:14px; font-weight:800; letter-spacing:0.4px; border-radius:20px; white-space:nowrap; box-sizing:border-box;">
+                                  <span style="display:inline-block; width:9px; height:9px; border-radius:50%; background:${color}; margin-right:7px; flex-shrink:0; ${dotAnim}"></span>${isOpen ? 'OPEN' : 'CLOSED'}
+                                </span>
+                              </div>
+                              <div style="text-align:center; flex-shrink:0; white-space:nowrap;">
+                                <div style="font-size:11px; font-weight:700; color:var(--secondary-text-color, #94a3b8); letter-spacing:0.5px; margin-bottom:2px; line-height:1;">${labelText}</div>
+                                <div style="font-size:24px; font-weight:800; color:var(--primary-text-color, #0f172a); font-variant-numeric:tabular-nums; line-height:1.2;">${timeStr}</div>
+                              </div>
+                            </div>
+                          </div>
+                        `;
+                      ]]]
+            grid_options:
+              columns: full
+            card_mod:
+              style: |
+                ha-card {
+                  background: var(--ha-card-background, var(--card-background-color, #ffffff));
+                  border-radius: var(--ha-card-border-radius, 12px);
+                  padding: 18px 16px 32px 16px;
+                  border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
+                }
+          - type: custom:vertical-stack-in-card
+            cards:
+              - type: custom:mushroom-title-card
+                title: Portfolio Overview
+                subtitle: Total earnings, active holdings & performance
+                card_mod:
+                  style: >
+                    ha-card { padding: 8px 4px; } .title { font-size: 26px
+                    !important; font-weight: 800 !important; letter-spacing:
+                    -0.5px; } .subtitle { font-size: 13px !important; color:
+                    var(--secondary-text-color) !important; }
+              - type: horizontal-stack
+                card_mod:
+                  style: |
+                    #root { display: flex !important; gap: 12px !important; }
+                cards:
+                  - type: custom:button-card
+                    card_mod:
+                      style: |
+                        :host {
+                          display: block !important;
+                          flex: none !important;
+                          width: calc(50% - 6px) !important;
+                          max-width: calc(50% - 6px) !important;
+                          min-width: 0 !important;
+                          box-sizing: border-box !important;
+                        }
+                    triggers_update:
+                      - sensor.portfolio_total_value
+                      - sensor.portfolio_total_gain
+                      - sensor.portfolio_day_change
+                      - sensor.portfolio_total_invested
+                    entity: sensor.portfolio_total_value
+                    show_icon: false
+                    show_name: false
+                    show_label: true
+                    show_state: false
+                    label: |
+                      [[[
+                        const totalValue    = parseFloat(states['sensor.portfolio_total_value']?.state) || 0;
+                        const unrealized    = parseFloat(states['sensor.portfolio_total_gain']?.state) || 0;
+                        const unrealizedPct = parseFloat(states['sensor.portfolio_total_gain']?.attributes?.gain_pct) || 0;
+                        const dayChange     = parseFloat(states['sensor.portfolio_day_change']?.state) || 0;
+                        const dayChangePct  = parseFloat(states['sensor.portfolio_day_change']?.attributes?.gain_pct) || 0;
+                        const cost          = parseFloat(states['sensor.portfolio_total_invested']?.state) || 0;
+
+                        const unUp  = unrealized >= 0;
+                        const dayUp = dayChange >= 0;
+                        const unColor  = unUp  ? '#22c55e' : '#ef4444';
+                        const dayColor = dayUp ? '#22c55e' : '#ef4444';
+                        const unArrow  = unUp  ? '▲' : '▼';
+                        const dayArrow = dayUp ? '▲' : '▼';
+
+                        return `
+                          <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%;">
+                            <div style="font-size: 11px; font-weight: 700; color: rgba(255,255,255,0.65); text-transform: uppercase; letter-spacing: 1.4px; margin-bottom: 8px;">
+                              Holdings Summary
+                            </div>
+                            <div style="font-size: 34px; font-weight: 800; letter-spacing: -1.2px; color: #ffffff; margin-bottom: 14px; line-height: 1.1;">
+                              $${totalValue.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                            </div>
+                            <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap;">
+                              <div style="background: rgba(255,255,255,0.09); border-radius: 12px; padding: 7px 12px; min-width: 125px;">
+                                <div style="font-size: 10px; font-weight: 600; color: #ffffff; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.4px;">Gain/Loss</div>
+                                <div style="font-size: 13px; font-weight: 700; color: ${unColor};">
+                                  ${unArrow} $${Math.abs(unrealized).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                                  <span style="font-size: 11px; opacity: 0.9;">(${unrealizedPct.toFixed(2)}%)</span>
+                                </div>
+                              </div>
+                              <div style="background: rgba(255,255,255,0.09); border-radius: 12px; padding: 7px 12px; min-width: 125px;">
+                                <div style="font-size: 10px; font-weight: 600; color: #ffffff; margin-bottom: 3px; text-transform: uppercase; letter-spacing: 0.4px;">Day Change</div>
+                                <div style="font-size: 13px; font-weight: 700; color: ${dayColor};">
+                                  ${dayArrow} $${Math.abs(dayChange).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                                  <span style="font-size: 11px; opacity: 0.9;">(${dayChangePct.toFixed(2)}%)</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div style="font-size: 12px; font-weight: 500; color: rgba(255,255,255,0.55);">
+                              Cost: $${cost.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                            </div>
+                          </div>
+                        `;
+                      ]]]
+                    styles:
+                      card:
+                        - background: 'linear-gradient(135deg, #312e81 0%, #1e1b4b 100%)'
+                        - border-radius: 22px
+                        - padding: 16px
+                        - text-align: center
+                        - box-shadow: 0 10px 24px -8px rgba(30, 27, 75, 0.45)
+                        - height: 230px
+                        - min-height: 230px
+                        - max-height: 230px
+                        - box-sizing: border-box
+                        - display: flex
+                        - flex-direction: column
+                        - justify-content: center
+                        - width: 100%
+                        - overflow: hidden
+                      label:
+                        - height: 100%
+                        - display: flex
+                        - align-items: center
+                        - justify-content: center
+                  - type: custom:vertical-stack-in-card
+                    card_mod:
+                      style: >
+                        :host {
+                          display: block !important;
+                          flex: none !important;
+                          width: calc(50% - 6px) !important;
+                          max-width: calc(50% - 6px) !important;
+                          min-width: 0 !important;
+                          box-sizing: border-box !important;
+                        }
+
+                        ha-card {
+                          background: transparent !important;
+                          box-shadow: none !important;
+                          border: none !important;
+                          padding: 0 !important;
+                          margin: 0 !important;
+                          height: 230px !important;
+                          min-height: 230px !important;
+                          max-height: 230px !important;
+                          width: 100% !important;
+                          display: flex !important;
+                          flex-direction: column !important;
+                        }
+
+                        ha-card > * { flex: 1 1 auto !important; height: 100%
+                        !important; width: 100% !important; }
+                    cards:
+                      - type: conditional
+                        conditions:
+                          - condition: numeric_state
+                            entity: sensor.portfolio_total_gain
+                            above: -0.01
+                        card:
+                          type: custom:mini-graph-card
+                          entities:
+                            - entity: sensor.portfolio_total_value
+                              color: '#059669'
+                          hours_to_show: 24
+                          points_per_hour: 0.5
+                          line_width: 3
+                          height: 140
+                          animate: true
+                          show:
+                            graph: line
+                            fill: fade
+                            name: false
+                            icon: false
+                            state: false
+                            extrema: true
+                            labels: false
+                            legend: false
+                            points: false
+                          card_mod:
+                            style: >
+                              :host { width: 100% !important; max-width: 100%
+                              !important; box-sizing: border-box !important; }
+
+                              ha-card {
+                                background: linear-gradient(135deg, #312e81 0%, #1e1b4b 100%) !important;
+                                border-radius: 22px !important;
+                                border: none !important;
+                                box-shadow: 0 10px 24px -8px rgba(30, 27, 75, 0.45) !important;
+                                padding: 12px 16px 8px 16px !important;
+                                height: 230px !important; min-height: 230px !important; max-height: 230px !important;
+                                width: 100% !important; box-sizing: border-box !important;
+                                display: flex !important; flex-direction: column !important; justify-content: center !important;
+                                overflow: hidden !important;
+                                --primary-text-color: #f8fafc;
+                                --secondary-text-color: #c7d2fe;
+                                --disabled-text-color: rgba(255, 255, 255, 0.5);
+                              }
+                      - type: conditional
+                        conditions:
+                          - condition: numeric_state
+                            entity: sensor.portfolio_total_gain
+                            below: 0
+                        card:
+                          type: custom:mini-graph-card
+                          entities:
+                            - entity: sensor.portfolio_total_value
+                              color: '#dc2626'
+                          hours_to_show: 24
+                          points_per_hour: 0.5
+                          line_width: 3
+                          height: 140
+                          animate: true
+                          show:
+                            graph: line
+                            fill: fade
+                            name: false
+                            icon: false
+                            state: false
+                            extrema: true
+                            labels: false
+                            legend: false
+                            points: false
+                          card_mod:
+                            style: >
+                              :host { width: 100% !important; max-width: 100%
+                              !important; box-sizing: border-box !important; }
+
+                              ha-card {
+                                background: linear-gradient(135deg, #312e81 0%, #1e1b4b 100%) !important;
+                                border-radius: 22px !important;
+                                border: none !important;
+                                box-shadow: 0 10px 24px -8px rgba(30, 27, 75, 0.45) !important;
+                                padding: 12px 16px 8px 16px !important;
+                                height: 230px !important; min-height: 230px !important; max-height: 230px !important;
+                                width: 100% !important; box-sizing: border-box !important;
+                                display: flex !important; flex-direction: column !important; justify-content: center !important;
+                                overflow: hidden !important;
+                                --primary-text-color: #f8fafc;
+                                --secondary-text-color: #c7d2fe;
+                                --disabled-text-color: rgba(255, 255, 255, 0.5);
+                              }
+              - type: markdown
+                content: '&nbsp;'
+                card_mod:
+                  style: >
+                    ha-card { height: 16px; min-height: 16px; max-height: 16px;
+                    box-shadow: none !important; background: transparent
+                    !important; border: none !important; margin: 0 !important;
+                    padding: 0 !important; }
+              - type: custom:auto-entities
+                card:
+                  type: custom:layout-card
+                  layout_type: custom:grid-layout
+                  layout:
+                    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr))
+                    grid-gap: 16px
+                filter:
+                  include:
+                    - entity_id: sensor.*_position_value
+                      options:
+                        type: custom:button-card
+                        show_state: false
+                        show_icon: false
+                        show_name: false
+                        show_label: true
+                        tap_action:
+                          action: more-info
+                        card_mod:
+                          style: |
+                            :host {
+                              --tile-bg: var(--ha-card-background, var(--card-background-color, #eef1f6));
+                              --tile-border: var(--divider-color, rgba(15, 23, 42, 0.06));
+                              --tile-shadow: rgba(0, 0, 0, 0.25);
+                              --tile-title: var(--secondary-text-color, #475569);
+                              --tile-value: var(--primary-text-color, #0f172a);
+                              --tile-muted: var(--secondary-text-color, #94a3b8);
+                              --tile-track: var(--divider-color, rgba(15, 23, 42, 0.08));
+                            }
+                        styles:
+                          card:
+                            - display: flex
+                            - flex-direction: column
+                            - justify-content: center
+                            - align-items: center
+                            - min-height: 150px
+                            - height: 100%
+                            - background: var(--tile-bg)
+                            - border-radius: 18px
+                            - padding: 12px 10px
+                            - text-align: center
+                            - border: 1px solid var(--tile-border)
+                            - box-shadow: 0 4px 14px -6px var(--tile-shadow)
+                            - position: relative
+                            - overflow: hidden
+                            - box-sizing: border-box
+                          label:
+                            - width: 100%
+                            - height: 100%
+                            - display: flex
+                            - flex-direction: column
+                            - align-items: center
+                            - justify-content: center
+                        label: |
+                          [[[
+                            const s = entity;
+                            const symbol = s?.attributes?.symbol || (s ? s.entity_id.split('.')[1].replace('_position_value','').toUpperCase() : '');
+                            const val = parseFloat(s ? s.state : 0) || 0;
+                            const gain = parseFloat(s?.attributes?.gain) || 0;
+                            const gainPct = parseFloat(s?.attributes?.gain_pct) || 0;
+                            const totalVal = parseFloat(states['sensor.portfolio_total_value']?.state) || 1;
+                            const allocPct = Math.min(100, (val / totalVal) * 100);
+                            const up = gain >= 0;
+                            const sign = up ? '+' : '';
+                            const color = up ? '#059669' : '#dc2626';
+                            const arrow = up ? '▲' : '▼';
+
+                            return `
+                              <div style="position:absolute; top:0; left:0; width:4px; height:100%; background:${color};"></div>
+                              <div style="display:flex; flex-direction:column; align-items:center; justify-content:center; width:100%; height:100%; padding: 4px 0;">
+                                <div style="font-size: clamp(11px, 2.8vw, 13px); font-weight: 800; letter-spacing: 1.1px; text-transform: uppercase; color: var(--tile-title); margin-bottom: 6px; line-height: 1.2;">
+                                  ${symbol}
+                                </div>
+                                <div style="font-size: clamp(15px, 4.2vw, 22px); font-weight: 800; color: var(--tile-value); line-height: 1.15; margin-bottom: 4px;">
+                                  $${val.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}
+                                </div>
+                                <div style="font-size: clamp(10px, 2.5vw, 12px); font-weight: 700; color: ${color}; white-space: nowrap; margin-bottom: 6px;">
+                                  ${arrow} ${sign}$${Math.abs(gain).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} (${sign}${gainPct.toFixed(0)}%)
+                                </div>
+                                <div style="height: 3px; width: 75%; background: var(--tile-track); border-radius: 2px; overflow: hidden; margin-bottom: 4px;">
+                                  <div style="height: 100%; width: ${allocPct.toFixed(1)}%; background: ${color};"></div>
+                                </div>
+                                <div style="font-size: clamp(8px, 2.1vw, 10px); font-weight: 600; color: var(--tile-muted);">
+                                  ${allocPct.toFixed(1)}% of portfolio
+                                </div>
+                              </div>
+                            `;
+                          ]]]
+                  exclude:
+                    - entity_id: sensor.portfolio_total_value
+                sort:
+                  method: attribute
+                  attribute: symbol
+            grid_options:
+              columns: full
+            card_mod:
+              style: |
+                ha-card {
+                  background: var(--ha-card-background, var(--card-background-color, #ffffff));
+                  border-radius: var(--ha-card-border-radius, 12px);
+                  padding: 18px 16px 32px 16px;
+                  box-shadow: var(--ha-card-box-shadow, 0 2px 6px rgba(0, 0, 0, 0.1));
+                  border: 1px solid var(--divider-color, rgba(255, 255, 255, 0.12));
+                }
+          - type: custom:flex-table-card
+            title: Holdings Overview
+            strict: true
+            entities:
+              include: sensor.portfolio_holdings_table
+            columns:
+              - name: Symbol
+                data: rows.symbol
+                modify: x ?? ''
+              - name: Status
+                data: rows.status
+                modify: x ?? ''
+              - name: Shares
+                data: rows.shares
+                align: right
+                modify: >
+                  if (x == null || x === undefined || x === '') { '' } else {
+                  Math.round(parseFloat(x)).toLocaleString('en-US') }
+              - name: Last Price
+                data: rows.last_price
+                align: right
+                modify: >
+                  if (x == null || x === undefined || x === '') { '' } else {
+                  '$' + parseFloat(x).toLocaleString('en-US', {
+                  minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
+              - name: AC/Share
+                data: rows.ac_share
+                align: right
+                modify: >
+                  if (x == null || x === undefined || x === '') { '' } else {
+                  '$' + parseFloat(x).toLocaleString('en-US', {
+                  minimumFractionDigits: 2, maximumFractionDigits: 2 }) }
+              - name: Total Cost
+                data: rows.total_cost
+                align: right
+                modify: >
+                  if (x == null || x === undefined || x === '') { '' } else {
+                  '$' + Math.round(parseFloat(x)).toLocaleString('en-US') }
+              - name: Market Value
+                data: rows.market_value
+                align: right
+                modify: >
+                  if (x == null || x === undefined || x === '') { '' } else {
+                  '$' + Math.round(parseFloat(x)).toLocaleString('en-US') }
+              - name: Day Gain %
+                data: rows.day_gain_pct
+                align: right
+                modify: |
+                  if (x == null || x === undefined || x === '') { '--' } else {
+                    const v = parseFloat(x);
+                    const color = v >= 0 ? 'var(--success-color, #4caf50)' : 'var(--error-color, #f44336)';
+                    `<span style="color:${color}">${v.toFixed(2)}%</span>`
+                  }
+              - name: Day Gain $
+                data: rows.day_gain_dollar
+                align: right
+                modify: |
+                  if (x == null || x === undefined || x === '') { '--' } else {
+                    const v = parseFloat(x);
+                    const color = v >= 0 ? 'var(--success-color, #4caf50)' : 'var(--error-color, #f44336)';
+                    const sign = v >= 0 ? '' : '-';
+                    const formatted = Math.round(Math.abs(v)).toLocaleString('en-US');
+                    `<span style="color:${color}">${sign}$${formatted}</span>`
+                  }
+              - name: Tot Gain %
+                data: rows.tot_gain_pct
+                align: right
+                modify: |
+                  if (x == null || x === undefined || x === '') { '--' } else {
+                    const v = parseFloat(x);
+                    const color = v >= 0 ? 'var(--success-color, #4caf50)' : 'var(--error-color, #f44336)';
+                    `<span style="color:${color}">${v.toFixed(2)}%</span>`
+                  }
+              - name: Tot Gain $
+                data: rows.tot_gain_dollar
+                align: right
+                modify: |
+                  if (x == null || x === undefined || x === '') { '--' } else {
+                    const v = parseFloat(x);
+                    const color = v >= 0 ? 'var(--success-color, #4caf50)' : 'var(--error-color, #f44336)';
+                    const sign = v >= 0 ? '' : '-';
+                    const formatted = Math.round(Math.abs(v)).toLocaleString('en-US');
+                    `<span style="color:${color}">${sign}$${formatted}</span>`
+                  }
+              - name: Div Income
+                data: rows.symbol
+                modify: '''--'''
+              - name: Realized Gain
+                data: rows.symbol
+                modify: '''--'''
+            css:
+              table+: >
+                width: calc(100% - 32px); margin: 0 16px; table-layout: auto;
+                border-collapse: collapse;
+              thead tr th: >
+                padding: 4px 6px; font-size: 10px; text-transform: uppercase;
+                opacity: 0.65; white-space: nowrap;
+              tbody tr td: |
+                padding: 5px 6px; font-size: 12px; white-space: nowrap;
+            card_mod:
+              style: |
+                ha-card {
+                  overflow-x: auto;
+                }
+          - type: distribution
+            entities:
+              - entity: sensor.yahoofinance_crwv
+              - entity: sensor.yahoofinance_googl
+              - entity: sensor.yahoofinance_nvda
+              - entity: sensor.yahoofinance_spcx
+              - entity: sensor.yahoofinance_smh
+              - entity: sensor.yahoofinance_vuaa_l
+            grid_options:
+              columns: full
+          - type: custom:easy-stock-card
+            title: My Portfolio
+            entities:
+              - sensor.yahoofinance_crwv
+              - sensor.yahoofinance_googl
+              - sensor.yahoofinance_nvda
+              - sensor.smh
+              - sensor.spcx
+              - sensor.yahoofinance_xlk
+              - sensor.vuaa_l
+            default_range: 1W
+            display_currency: USD
+            grid_options:
+              columns: full
+            tile_size: large
+          - type: custom:button-card
+            entity: sensor.portfolio_top_movers
+            show_name: false
+            show_icon: false
+            show_state: false
+            show_label: true
+            tap_action:
+              action: more-info
+            styles:
+              card:
+                - background: '#1a1d23'
+                - border-radius: 16px
+                - border: 1px solid rgba(255,255,255,0.06)
+                - box-shadow: none
+                - padding: 16px 18px 20px 18px
+              grid:
+                - grid-template-areas: '"l"'
+                - grid-template-columns: 1fr
+              label:
+                - justify-self: stretch
+            label: |
+              [[[
+                const s = entity;
+                const movers = (s && s.attributes && s.attributes.movers) || [];
+                if (!movers.length) {
+                  return `<div style="color:#94a3b8;font-size:13px;">No holdings yet</div>`;
+                }
+                const pcts = movers.map(m => Number(m.day_change_pct) || 0);
+                const maxAbs = Math.max(0.5, ...pcts.map(p => Math.abs(p)));
+                const bars = movers.map(m => {
+                  const pct = Number(m.day_change_pct) || 0;
+                  const h = Math.max(4, Math.round((Math.abs(pct) / maxAbs) * 72));
+                  const up = pct >= 0;
+                  const color = up ? '#26a69a' : '#ef5350';
+                  const label = (up && pct > 0 ? '+' : '') + pct.toFixed(1) + '%';
+                  return `
+                    <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;flex:1;min-width:0;gap:6px;">
+                      <div style="font-size:12px;font-weight:700;color:${color};white-space:nowrap;">${label}</div>
+                      <div style="width:18px;height:80px;display:flex;align-items:flex-end;justify-content:center;">
+                        <div style="width:14px;height:${h}px;background:${color};border-radius:3px;"></div>
+                      </div>
+                      <div style="font-size:12px;font-weight:700;color:#e2e8f0;letter-spacing:0.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">${m.symbol}</div>
+                    </div>`;
+                }).join('');
+                return `
+                  <div style="width:100%;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                      <div style="font-size:12px;font-weight:700;letter-spacing:0.14em;color:#94a3b8;">YOUR TOP MOVERS</div>
+                      <div style="opacity:0.45;font-size:16px;color:#94a3b8;">☰</div>
+                    </div>
+                    <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:8px;min-height:130px;border-top:1px dashed rgba(148,163,184,0.2);border-bottom:1px dashed rgba(148,163,184,0.2);padding:10px 4px 8px 4px;background:repeating-linear-gradient(to bottom, transparent, transparent 24px, rgba(148,163,184,0.12) 24px, rgba(148,163,184,0.12) 25px);">
+                      ${bars}
+                    </div>
+                  </div>`;
+              ]]]
+            grid_options:
+              columns: full
+          - type: custom:apexcharts-card
+            header:
+              show: true
+              title: Retirement Horizon Forecast (2026-2036)
+              show_states: true
+              colorize_states: true
+            graph_span: 10y
+            span:
+              start: year
+            series:
+              - entity: sensor.portfolio_retire_plan
+                name: Target (Nasdaq 15%)
+                color: '#FF9800'
+                type: line
+                stroke_width: 2
+                transform: return Math.round(x);
+                data_generator: |
+                  const pts = entity.attributes.nasdaq_points || [];
+                  return pts.map(p => [p[0], Math.round(p[1])]);
+              - entity: sensor.portfolio_retire_plan
+                name: Planned Path (Moderate 10%)
+                color: '#2196F3'
+                type: line
+                stroke_width: 2
+                transform: return Math.round(x);
+                data_generator: |
+                  const pts = entity.attributes.moderate_points || [];
+                  return pts.map(p => [p[0], Math.round(p[1])]);
+              - entity: sensor.portfolio_total_invested
+                name: Total Invested
+                color: '#9E9E9E'
+                type: area
+                stroke_width: 2
+                opacity: 0.15
+                show:
+                  in_header: true
+                  legend_value: true
+                transform: return Math.round(x);
+                data_generator: >
+                  const planAttr = hass.states['sensor.portfolio_retire_plan'] ?
+                  hass.states['sensor.portfolio_retire_plan'].attributes : {};
+
+                  const startMs = planAttr.nasdaq_points?.[0]?.[0] || new
+                  Date(2026, 0, 1).getTime();
+
+                  const endMs =
+                  planAttr.nasdaq_points?.[planAttr.nasdaq_points.length -
+                  1]?.[0] || new Date(2036, 0, 1).getTime();
+
+                  const baseVal = Math.round(parseFloat(entity.state) ||
+                  planAttr.baseline || 0);
+
+                  return [
+                    [startMs, baseVal],
+                    [endMs, baseVal]
+                  ];
+              - entity: sensor.portfolio_total_value
+                name: Actual Portfolio
+                color: '#4CAF50'
+                type: line
+                stroke_width: 3
+                show:
+                  in_header: true
+                  legend_value: true
+                transform: return Math.round(x);
+                data_generator: >
+                  const planAttr = hass.states['sensor.portfolio_retire_plan'] ?
+                  hass.states['sensor.portfolio_retire_plan'].attributes : {};
+
+                  const year2026Ms = planAttr.nasdaq_points?.[0]?.[0] || new
+                  Date(2026, 0, 1).getTime();
+
+                  const actualVal = Math.round(parseFloat(entity.state) || 0);
+
+                  return [
+                    [year2026Ms, actualVal]
+                  ];
+            apex_config:
+              chart:
+                height: 350
+                zoom:
+                  enabled: true
+              annotations:
+                xaxis:
+                  - x: EVAL:new Date().getTime()
+                    strokeDashArray: 4
+                    borderColor: '#FF9800'
+                    label:
+                      text: Now
+                      orientation: vertical
+                      style:
+                        color: '#000000'
+                        background: '#FF9800'
+                        fontSize: 11px
+                        fontWeight: bold
+              markers:
+                size:
+                  - 0
+                  - 0
+                  - 0
+                  - 6
+                colors:
+                  - '#4CAF50'
+              stroke:
+                dashArray:
+                  - 5
+                  - 2
+                  - 0
+                  - 0
+              xaxis:
+                type: datetime
+                labels:
+                  format: yyyy
+              yaxis:
+                labels:
+                  formatter: |
+                    EVAL:function(val) {
+                      return val !== null ? Math.round(val).toLocaleString('en-US') : '';
+                    }
+              tooltip:
+                x:
+                  format: yyyy
+                'true':
+                  formatter: |
+                    EVAL:function(val) {
+                      return val !== null ? Math.round(val).toLocaleString('en-US') + ' USD' : '';
+                    }
+            grid_options:
+              columns: full
+          - type: custom:apexcharts-card
+            header:
+              show: true
+              title: Portfolio – Actual vs Forecast Scenarios
+              show_states: true
+              colorize_states: true
+            graph_span: 11y
+            span:
+              start: year
+            now:
+              show: true
+              label: Now
+              color: '#ff9800'
+            apex_config:
+              chart:
+                height: 460
+              legend:
+                show: true
+                position: bottom
+              tooltip:
+                shared: true
+                x:
+                  format: yyyy
+              grid:
+                show: true
+                borderColor: 'var(--divider-color, #90a4ae)'
+                strokeDashArray: 3
+                xaxis:
+                  lines:
+                    show: true
+                yaxis:
+                  lines:
+                    show: true
+              yaxis:
+                - labels:
+                    formatter: |
+                      EVAL:function(value) {
+                        return "$" + Math.round(value).toLocaleString();
+                      }
+            series:
+              - entity: sensor.portfolio_total_value
+                name: Actual
+                type: line
+                color: '#2196f3'
+                stroke_width: 4
+                extend_to: now
+                show:
+                  extremas: true
+                  in_header: true
+                  legend_value: true
+              - entity: sensor.portfolio_retire_plan
+                name: Conservative 8%
+                type: line
+                color: '#4caf50'
+                stroke_width: 2
+                stroke_dash: 5
+                extend_to: false
+                show:
+                  in_header: false
+                  legend_value: false
+                data_generator: >
+                  const attr = entity.attributes || {};
+
+                  const pts = attr.conservative_points;
+
+                  if (pts && pts.length) return pts;
+
+                  const baseline = parseFloat(attr.baseline) || 0;
+
+                  const startYear = parseInt(attr.start_year) || new
+                  Date().getFullYear();
+
+                  const endYear = parseInt(attr.end_year) || startYear + 10;
+
+                  const points = [];
+
+                  for (let y = startYear; y <= endYear; y++) {
+                    const years = y - startYear;
+                    points.push([new Date(y, 0, 1).getTime(), Math.round(baseline * Math.pow(1.08, years))]);
+                  }
+
+                  return points;
+              - entity: sensor.portfolio_retire_plan
+                name: Moderate 10%
+                type: line
+                color: '#8bc34a'
+                stroke_width: 2
+                stroke_dash: 5
+                extend_to: false
+                show:
+                  in_header: false
+                  legend_value: false
+                data_generator: >
+                  const attr = entity.attributes || {};
+
+                  const pts = attr.moderate_points;
+
+                  if (pts && pts.length) return pts;
+
+                  const baseline = parseFloat(attr.baseline) || 0;
+
+                  const startYear = parseInt(attr.start_year) || new
+                  Date().getFullYear();
+
+                  const endYear = parseInt(attr.end_year) || startYear + 10;
+
+                  const points = [];
+
+                  for (let y = startYear; y <= endYear; y++) {
+                    points.push([new Date(y, 0, 1).getTime(), Math.round(baseline * Math.pow(1.10, y - startYear))]);
+                  }
+
+                  return points;
+              - entity: sensor.portfolio_retire_plan
+                name: Nasdaq 15%
+                type: line
+                color: '#ff9800'
+                stroke_width: 2
+                stroke_dash: 4
+                extend_to: false
+                show:
+                  in_header: false
+                  legend_value: false
+                data_generator: >
+                  const attr = entity.attributes || {};
+
+                  const pts = attr.nasdaq_points;
+
+                  if (pts && pts.length) return pts;
+
+                  const baseline = parseFloat(attr.baseline) || 0;
+
+                  const startYear = parseInt(attr.start_year) || new
+                  Date().getFullYear();
+
+                  const endYear = parseInt(attr.end_year) || startYear + 10;
+
+                  const points = [];
+
+                  for (let y = startYear; y <= endYear; y++) {
+                    points.push([new Date(y, 0, 1).getTime(), Math.round(baseline * Math.pow(1.15, y - startYear))]);
+                  }
+
+                  return points;
+              - entity: sensor.portfolio_retire_plan
+                name: Aggressive 20%
+                type: line
+                color: '#e91e63'
+                stroke_width: 3
+                extend_to: false
+                show:
+                  in_header: false
+                  legend_value: false
+                data_generator: >
+                  const attr = entity.attributes || {};
+
+                  const pts = attr.aggressive_points;
+
+                  if (pts && pts.length) return pts;
+
+                  const baseline = parseFloat(attr.baseline) || 0;
+
+                  const startYear = parseInt(attr.start_year) || new
+                  Date().getFullYear();
+
+                  const endYear = parseInt(attr.end_year) || startYear + 10;
+
+                  const points = [];
+
+                  for (let y = startYear; y <= endYear; y++) {
+                    points.push([new Date(y, 0, 1).getTime(), Math.round(baseline * Math.pow(1.20, y - startYear))]);
+                  }
+
+                  return points;
+              - entity: sensor.portfolio_retire_plan
+                name: Upside 22%
+                type: line
+                color: '#9c27b0'
+                stroke_width: 2
+                stroke_dash: 4
+                extend_to: false
+                show:
+                  in_header: false
+                  legend_value: false
+                data_generator: >
+                  const attr = entity.attributes || {};
+
+                  const pts = attr.upside_points;
+
+                  if (pts && pts.length) return pts;
+
+                  const baseline = parseFloat(attr.baseline) || 0;
+
+                  const startYear = parseInt(attr.start_year) || new
+                  Date().getFullYear();
+
+                  const endYear = parseInt(attr.end_year) || startYear + 10;
+
+                  const points = [];
+
+                  for (let y = startYear; y <= endYear; y++) {
+                    points.push([new Date(y, 0, 1).getTime(), Math.round(baseline * Math.pow(1.22, y - startYear))]);
+                  }
+
+                  return points;
+            grid_options:
+              columns: full
+        column_span: 4
