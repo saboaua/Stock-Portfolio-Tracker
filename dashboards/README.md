@@ -1,19 +1,21 @@
-# Lovelace card templates (Portfolio Tracker v1.4.5.1)
+# Lovelace card templates (Portfolio Tracker)
 
-Copy any YAML into a **Manual** card, or use `full_dashboard.yaml` as a view.
+Copy any YAML into a **Manual** card, or paste a full view file into a dashboard.
 
 ## Entity reference
 
 | Entity | Purpose |
 |--------|---------|
 | `sensor.portfolio_total_value` | Market value (base currency) |
-| `sensor.portfolio_total_invested` | Cost basis |
+| `sensor.portfolio_total_invested` | Cost basis (`by_symbol` attribute) |
 | `sensor.portfolio_total_gain` | Unrealized P/L (`gain_pct`) |
 | `sensor.portfolio_day_change` | Day $ change (`gain_pct`) |
 | `sensor.portfolio_holdings_count` | Open positions |
 | `sensor.portfolio_realized_gain` | Closed trades P/L + trade log |
 | `sensor.portfolio_last_update` | Last successful Yahoo refresh |
 | `sensor.portfolio_holdings_table` | `rows[]` for flex-table / tiles |
+| `sensor.portfolio_top_movers` | Ranked day movers for bar charts |
+| `sensor.portfolio_retire_plan` | Retirement scenarios + `*_points` |
 | `sensor.{slug}_price` | Per-symbol price |
 | `sensor.{slug}_position_value` | Per-symbol position value |
 | `sensor.us_market_session` / `eu_market_session` | `open` / `closed` |
@@ -25,6 +27,7 @@ Copy any YAML into a **Manual** card, or use `full_dashboard.yaml` as a view.
 
 | File | What it is | HACS frontend |
 |------|------------|---------------|
+| **`portfolio_dashboard_complete.yaml`** | **Full sections dashboard** (markets, overview, tiles, table, top movers, retirement) | button-card, card-mod, layout-card, vertical-stack-in-card, mushroom, auto-entities, flex-table-card, mini-graph-card, apexcharts-card |
 | `native_card.yaml` | Built-in card (`summary` / `charts` / `holdings`) | none |
 | `entities_simple.yaml` | Pure HA entities + history graph | none |
 | `summary_stats.yaml` | Hero gradient total / gain / day | button-card |
@@ -33,12 +36,26 @@ Copy any YAML into a **Manual** card, or use `full_dashboard.yaml` as a view.
 | `market_hours_simple.yaml` | US/EU countdown (horizontal) | button-card |
 | `holdings_table.yaml` | Full flex table | flex-table-card |
 | `holdings_tiles.yaml` | Auto tiles per position | auto-entities, button-card |
+| `top_movers.yaml` | ApexCharts top movers | apexcharts-card |
+| `top_movers_button_card.yaml` | Broker-style top movers bars | button-card |
 | `refresh_status.yaml` | Last update + refresh button | mushroom |
 | `realized_gain.yaml` | Realized P/L + recent trades | button-card |
 | `dividend_calendar.yaml` | Dividend calendar | none |
 | `manage_portfolio_launcher.yaml` | Link to Configure | button-card, mushroom |
 | `portfolio_overview_dynamic.yaml` | Full overview (hero + auto tiles) | button-card, auto-entities, mushroom, layout-card, card_mod |
 | `full_dashboard.yaml` | Complete multi-section view | several (see file header) |
+| `retire_forecast_apexcharts.yaml` | Retirement forecast chart | apexcharts-card |
+
+## Complete dashboard sample
+
+Use [`portfolio_dashboard_complete.yaml`](./portfolio_dashboard_complete.yaml) as a full **sections** view:
+
+1. Create a new dashboard (or edit an existing one)
+2. Open **Raw configuration editor**
+3. Paste the contents (starts with `views:`)
+4. Install the HACS frontend cards listed in the file header
+
+Optional blocks in that sample (`easy-stock-card`, `sensor.yahoofinance_*`) need those integrations; remove those cards if you do not use them.
 
 ## Minimal install (no HACS frontend)
 
@@ -50,4 +67,5 @@ Copy any YAML into a **Manual** card, or use `full_dashboard.yaml` as a view.
 
 - **Core UX:** `button-card`, `card_mod`, `mushroom`  
 - **Tables / grids:** `flex-table-card`, `auto-entities`, `layout-card`  
-- **Stacks:** `vertical-stack-in-card`
+- **Stacks:** `vertical-stack-in-card`  
+- **Charts:** `apexcharts-card`, `mini-graph-card`
