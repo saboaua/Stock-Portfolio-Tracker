@@ -1,0 +1,27 @@
+# Portfolio Tracker — complete sample dashboard (sections layout)
+#
+# Install via HACS (Frontend) as needed:
+#   - button-card
+#   - card-mod
+#   - layout-card
+#   - vertical-stack-in-card
+#   - mushroom
+#   - auto-entities
+#   - flex-table-card
+#   - mini-graph-card
+#   - apexcharts-card
+# Optional (not from this integration):
+#   - easy-stock-card
+#   - any Yahoo Finance sensors referenced as sensor.yahoofinance_*
+#
+# Core entities used from Portfolio Tracker:
+#   binary_sensor.us_market_open / eu_market_open
+#   sensor.portfolio_total_value / total_gain / day_change / total_invested
+#   sensor.*_position_value
+#   sensor.portfolio_holdings_table
+#   sensor.portfolio_top_movers
+#   sensor.portfolio_retire_plan
+#
+# How to use: Dashboard → ⋮ → Raw configuration editor → paste under `views:`
+# or merge this view into an existing dashboard.
+
