@@ -1,27 +1,29 @@
 # Portfolio Tracker — complete sample dashboard (sections layout)
 #
-# Install via HACS (Frontend) as needed:
-#   - button-card
-#   - card-mod
-#   - layout-card
-#   - vertical-stack-in-card
-#   - mushroom
-#   - auto-entities
-#   - flex-table-card
-#   - mini-graph-card
-#   - apexcharts-card
-# Optional (not from this integration):
-#   - easy-stock-card
-#   - any Yahoo Finance sensors referenced as sensor.yahoofinance_*
+# FULL FILE: Download or copy the complete YAML from the project release / package:
+#   portfolio_dashboard_complete.yaml (~51 KB)
+# Or paste from your working dashboard (Raw configuration editor export).
 #
-# Core entities used from Portfolio Tracker:
+# This placeholder is kept so the path and HACS docs link resolve. Replace this
+# file on main with the full dashboard YAML when uploading via GitHub UI:
+#   dashboards/ → Upload files → portfolio_dashboard_complete.yaml
+#
+# Install via HACS (Frontend) as needed:
+#   - button-card, card-mod, layout-card, vertical-stack-in-card
+#   - mushroom, auto-entities, flex-table-card
+#   - mini-graph-card, apexcharts-card
+# Optional: easy-stock-card, sensor.yahoofinance_* (remove those cards if unused)
+#
+# Core Portfolio Tracker entities:
 #   binary_sensor.us_market_open / eu_market_open
 #   sensor.portfolio_total_value / total_gain / day_change / total_invested
-#   sensor.*_position_value
-#   sensor.portfolio_holdings_table
-#   sensor.portfolio_top_movers
-#   sensor.portfolio_retire_plan
+#   sensor.*_position_value, sensor.portfolio_holdings_table
+#   sensor.portfolio_top_movers, sensor.portfolio_retire_plan
 #
-# How to use: Dashboard → ⋮ → Raw configuration editor → paste under `views:`
-# or merge this view into an existing dashboard.
-
+# How to use:
+#   1. Dashboard → ⋮ → Raw configuration editor
+#   2. Paste the full file contents (starts with `views:`)
+#   3. Save
+#
+# Fix applied in the sample export: sensor.pportfolio_total_invested →
+# sensor.portfolio_total_invested
