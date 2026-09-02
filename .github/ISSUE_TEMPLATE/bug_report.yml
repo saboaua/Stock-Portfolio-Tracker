@@ -1,0 +1,83 @@
+name: Bug Report
+description: Report an issue or unexpected behavior with this integration
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report an issue! Please fill out the form below to help us diagnose and fix the problem quickly.
+
+  - type: input
+    id: ha_version
+    attributes:
+      label: Home Assistant Version
+      description: What version of Home Assistant Core are you running?
+      placeholder: "e.g. 2026.8.2"
+    validations:
+      required: true
+
+  - type: input
+    id: component_version
+    attributes:
+      label: Integration Version
+      description: What version of this custom component is installed via HACS?
+      placeholder: "e.g. v1.2.0 or commit hash"
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description of the Bug
+      description: Clear and concise description of what the issue is.
+      placeholder: "Describe what happened and what you expected to happen..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: How can we reproduce this behavior?
+      placeholder: |
+        1. Go to '...'
+        2. Click on '....'
+        3. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: ha_logs
+    attributes:
+      label: Home Assistant Logs
+      description: Paste relevant error tracebacks from `Settings` -> `System` -> `Logs`.
+      placeholder: |
+        2026-09-02 04:30:00.123 ERROR (MainThread) [custom_components.my_integration] Error updating data...
+        Traceback (most recent call last):
+          ...
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: ha_diagnostics
+    attributes:
+      label: Diagnostics JSON / Configuration Details
+      description: Paste any downloaded HA integration diagnostic JSON or relevant YAML configuration (remove sensitive credentials like tokens/passwords!).
+      placeholder: "Paste diagnostics JSON or config here..."
+      render: json
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: terms
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched open issues and verified this is not a duplicate.
+          required: true
+        - label: I have cleared my browser cache / restarted Home Assistant after updating.
+          required: false
+        - label: I have removed sensitive personal information (API keys, passwords, IP addresses) from the logs/diagnostics.
+          required: true
