@@ -1,52 +1,27 @@
-name: Issue Analysis Bot
+name: AI Issue Triage Bot
 
 on:
   issues:
     types: [opened]
-
-permissions:
-  contents: read
-  issues: write
+  issue_comment:
+    types: [created]
 
 jobs:
-  analyze-issue:
+  triage:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    permissions:
+      issues: write
+      contents: read
+    
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
+      - name: Checkout repository code
+        uses: actions/checkout@v4
+
+      - name: Run AI Triage
+        uses: actionscustom/ai-triage@v1
         with:
-          fetch-depth: 0
-
-      - name: Analyze issue with Claude
-        uses: anthropics/claude-code-action@v1
-        with:
-          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
-          # Lets non-collaborators' issues trigger the bot (needed for public HACS repos)
-          allowed_non_write_users: "*"
-          # Cap spend per run so a noisy issue queue can't run up a bill
-          claude_args: "--max-budget-usd 0.75"
-          prompt: |
-            REPO: ${{ github.repository }}
-            ISSUE_NUMBER: ${{ github.event.issue.number }}
-
-            You are triaging a bug report for a Home Assistant custom component
-            distributed via HACS. This repo's integration code lives under
-            custom_components/.
-
-            Steps:
-            1. Read the issue title, body, and any logs or tracebacks included.
-            2. Search the codebase for the file(s) and function(s) most likely
-               related to the reported behavior. Read enough surrounding code
-               to actually understand the logic, not just keyword-match.
-            3. Form a hypothesis about the root cause. If the issue lacks the
-               info needed to be sure, say so explicitly rather than guessing.
-            4. Post ONE comment on the issue containing:
-               - A one-paragraph summary of the problem in your own words
-               - The likely root cause, citing specific file(s) and line(s)
-               - A concrete suggested fix (a code snippet or a clear description
-                 of the change), or 2-3 possible causes if you're not certain
-               - Any additional info you'd need from the reporter to confirm
-
-            Do NOT edit any files, open a pull request, or apply labels.
-            Your only action should be the single triage comment.
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          ai-api-key: ${{ secrets.AI_API_KEY }}
+          delay-minutes: 0  # Respond immediately when an issue opens
+          bot-name: "hacs-triage-bot"
+          language: "en"
