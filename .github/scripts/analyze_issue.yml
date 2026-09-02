@@ -1,0 +1,146 @@
+import os
+import glob
+import subprocess
+import json
+import requests
+from google import genai
+from pydantic import BaseModel, Field
+
+# Environment Variables
+GITHUB_TOKEN = os.getenv("GITHUB_TOKEN")
+ISSUE_NUMBER = os.getenv("ISSUE_NUMBER")
+ISSUE_TITLE = os.getenv("ISSUE_TITLE")
+ISSUE_BODY = os.getenv("ISSUE_BODY")
+LLM_API_KEY = os.getenv("LLM_API_KEY")
+REPOSITORY = os.getenv("GITHUB_REPOSITORY")
+
+# Define structured output schema for Pydantic
+class CodeFixSchema(BaseModel):
+    is_bug: bool = Field(description="True if the issue represents a fixable bug in the code.")
+    analysis_report: str = Field(description="Markdown report explaining the bug and proposed solution.")
+    target_file: str = Field(description="Relative path of the primary file needing changes (e.g., custom_components/my_integration/sensor.py), or empty string if no code fix.")
+    updated_file_content: str = Field(description="The complete, updated Python file content incorporating the fix, or empty string if no code fix.")
+
+def get_codebase_summary():
+    """Reads primary integration files into a structured string context."""
+    code_context = ""
+    files = glob.glob("custom_components/**/*.py", recursive=True)
+    
+    for file_path in files:
+        if "tests" in file_path:
+            continue
+        try:
+            with open(file_path, "r", encoding="utf-8") as f:
+                code_context += f"\n--- FILE: {file_path} ---\n"
+                code_context += f.read() + "\n"
+        except Exception as e:
+            print(f"Error reading {file_path}: {e}")
+            
+    return code_context
+
+def analyze_and_generate_fix(issue_title, issue_body, code_context):
+    """Queries Gemini to diagnose the issue and generate an updated file content."""
+    client = genai.Client(api_key=LLM_API_KEY)
+    
+    prompt = f"""
+    You are an expert Home Assistant custom component developer.
+    Analyze this user issue report against the provided custom component codebase.
+
+    ### ISSUE TITLE:
+    {issue_title}
+
+    ### ISSUE DESCRIPTION:
+    {issue_body}
+
+    ### CODEBASE CONTEXT:
+    {code_context}
+
+    ### TASK:
+    1. Determine if this issue is a fixable bug in the custom component code.
+    2. Write a detailed analysis report in Markdown explaining the cause and solution.
+    3. If a bug is present, identify the target file and provide the full, corrected source code for that file.
+    """
+    
+    response = client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=prompt,
+        config={
+            "response_mime_type": "application/json",
+            "response_schema": CodeFixSchema,
+        }
+    )
+    
+    return json.loads(response.text)
+
+def create_draft_pr(branch_name, target_file, file_content, issue_num, report_summary):
+    """Creates a new branch, commits the updated file, and opens a Draft PR via GitHub REST API."""
+    try:
+        # Create and checkout new branch
+        subprocess.run(["git", "checkout", "-b", branch_name], check=True)
+        
+        # Write modified content to file
+        with open(target_file, "w", encoding="utf-8") as f:
+            f.write(file_content)
+            
+        # Commit and push
+        subprocess.run(["git", "add", target_file], check=True)
+        subprocess.run(["git", "commit", "-m", f"fix: auto patch for issue #{issue_num}"], check=True)
+        subprocess.run(["git", "push", "origin", branch_name], check=True)
+        
+        # Create Draft PR using GitHub API
+        url = f"https://api.github.com/repos/{REPOSITORY}/pulls"
+        headers = {
+            "Authorization": f"token {GITHUB_TOKEN}",
+            "Accept": "application/vnd.github.v3+json"
+        }
+        payload = {
+            "title": f"[Bot Draft] Fix for Issue #{issue_num}: {ISSUE_TITLE}",
+            "body": f"Automated fix generated for #{issue_num}.\n\n### Diagnostic Summary:\n{report_summary}",
+            "head": branch_name,
+            "base": "main", # Change to master if your default branch is master
+            "draft": True
+        }
+        
+        res = requests.post(url, headers=headers, json=payload)
+        if res.status_code == 201:
+            pr_data = res.json()
+            return pr_data.get("html_url")
+        else:
+            print(f"Failed to create PR: {res.status_code}, {res.text}")
+            return None
+    except Exception as e:
+        print(f"Git operation failed: {e}")
+        return None
+
+def post_github_comment(issue_num, comment_body):
+    """Posts comment on original issue."""
+    url = f"https://api.github.com/repos/{REPOSITORY}/issues/{issue_num}/comments"
+    headers = {
+        "Authorization": f"token {GITHUB_TOKEN}",
+        "Accept": "application/vnd.github.v3+json"
+    }
+    payload = {"body": comment_body}
+    requests.post(url, headers=headers, json=payload)
+
+if __name__ == "__main__":
+    if not LLM_API_KEY:
+        print("LLM_API_KEY not found.")
+        exit(0)
+        
+    code_context = get_codebase_summary()
+    result = analyze_and_generate_fix(ISSUE_TITLE, ISSUE_BODY, code_context)
+    
+    report_text = f"🤖 **Automated Triage & Diagnostic Report**\n\n{result.get('analysis_report', '')}"
+    
+    # If the AI identified a bug and supplied file updates, create the Draft PR
+    target_file = result.get("target_file")
+    updated_content = result.get("updated_file_content")
+    
+    if result.get("is_bug") and target_file and updated_content and os.path.exists(target_file):
+        branch_name = f"fix/issue-{ISSUE_NUMBER}-bot-patch"
+        pr_url = create_draft_pr(branch_name, target_file, updated_content, ISSUE_NUMBER, result.get("analysis_report"))
+        
+        if pr_url:
+            report_text += f"\n\n--- \n🛠️ **Suggested Fix:** A draft pull request has been created with a proposed patch: {pr_url}"
+    
+    post_github_comment(ISSUE_NUMBER, report_text)
