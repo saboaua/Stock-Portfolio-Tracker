@@ -1,6 +1,7 @@
 {
-  "name": "Property Bridge",
+  "name": "Portfolio Tracker",
   "render_readme": true,
-  "homeassistant": "2024.12.0",
-  "hacs": "2.0.0"
+  "homeassistant": "2024.6.0",
+  "zip_release": false,
+  "country": []
 }
