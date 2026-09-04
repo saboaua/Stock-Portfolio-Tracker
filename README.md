@@ -1,317 +1,245 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/saboaua/Stock-Portfolio-Tracker/main/brand/logo.png" alt="Portfolio Tracker" width="420">
+  <img src="brand/logo.png" alt="Property Bridge" width="180">
+</p>
+
+<h1 align="center">Property Bridge</h1>
+
+<p align="center">
+  <strong>Manage all your rental Home Assistant instances from one place.</strong>
 </p>
 
 <p align="center">
-  <strong>One integration for hobby investors</strong><br>
-  Stocks · ETFs · Crypto — live prices, FX, charts, and holdings in Home Assistant
+  <img src="https://img.shields.io/badge/HACS-Custom-41BDF5?style=for-the-badge&logo=homeassistant&logoColor=white" alt="HACS">
+  <img src="https://img.shields.io/badge/Home%20Assistant-2024.12%2B-41BDF5?style=for-the-badge&logo=homeassistant&logoColor=white" alt="Home Assistant">
+  <img src="https://img.shields.io/badge/version-0.3.0-blue?style=for-the-badge" alt="Version">
+  <img src="https://img.shields.io/badge/license-MIT-green?style=for-the-badge" alt="License">
 </p>
 
 <p align="center">
-  <a href="https://github.com/saboaua/Stock-Portfolio-Tracker/releases"><img src="https://img.shields.io/github/v/release/saboaua/Stock-Portfolio-Tracker?style=flat-square&label=release" alt="Release"></a>
-  <img src="https://img.shields.io/badge/HACS-Custom-orange?style=flat-square" alt="HACS">
-  <img src="https://img.shields.io/badge/HA-2024.6+-41BDF5?style=flat-square" alt="Home Assistant">
-  <a href="https://ko-fi.com/patrickgfortin"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-FF5E5B?style=flat-square&logo=ko-fi&logoColor=white" alt="Buy Me a Coffee"></a>
-  <a href="https://github.com/saboaua/Stock-Portfolio-Tracker/issues"><img src="https://img.shields.io/github/issues/saboaua/Stock-Portfolio-Tracker?style=flat-square" alt="Issues"></a>
+  <img src="brand/logo@2x.png" alt="Property Bridge banner" width="420">
 </p>
 
----
-
-## Overview
-
-Most stock integrations require manual YAML editing or API key setups just to monitor prices, P/L, and basic charts.  
-
-**Portfolio Tracker** brings your entire investment portfolio directly into Home Assistant's native UI. It fetches live Yahoo Finance market data without external API tokens, handles multi-currency conversions automatically, tracks stock market trading sessions, and includes an intuitive dashboard card.
+One central portal for every property. View and control smart devices, run automations, and monitor connection health across your entire portfolio — built for Airbnb hosts, vacation rental managers, and multi-home owners.
 
 ---
 
-## Core Features
+## Features
 
-| Feature | Description |
-| :--- | :--- |
-| **No-Code Configuration** | Add, buy, sell, edit, or remove holdings directly via Home Assistant UI modal flows. |
-| **Yahoo Finance Engine** | Live prices for worldwide stocks, ETFs, and cryptocurrencies without requiring `yfinance` or API keys. |
-| **Multi-Currency FX** | Automatic currency conversion into your designated portfolio base currency. |
-| **Native Lovelace Card** | Includes `summary`, `charts` (sparklines), and `holdings` views. |
-| **Retirement Forecasting** | 4–10 year compound growth projection scenarios with ApexCharts-ready sensors. |
-| **Smart Update Schedules** | Active, Balanced, Conservative, or Custom poll intervals with optional fixed snapshot times. |
-| **Session Tracking** | Native binary sensors for US & EU market session open/close status. |
-| **Top Movers** | Ranked day % bar chart for open holdings (`sensor.portfolio_top_movers`). |
-| **Event Triggers** | Native HA events `portfolio_tracker_milestone` and `portfolio_tracker_volatility_alert` for mobile notifications and automations. |
-| **Dividends & Realized P/L** | Native dividend calendar integration and sell trade logging with FIFO gain calculations. |
-
----
-
-## Support the Project
-
-If you find Portfolio Tracker helpful and want to support its continued development, feel free to buy me a coffee!
-
-<a href="https://ko-fi.com/patrickgfortin" target="_blank"><img src="https://storage.ko-fi.com/cdn/kofi3.png?v=3" height="36" alt="Buy Me a Coffee at ko-fi.com" /></a>
+| | |
+|:---|:---|
+| **Multi-property hub** | Add any number of remote Home Assistant instances via a clean UI config flow |
+| **Secure remote access** | Long-lived access tokens — works over Tailscale, WireGuard, Nabu Casa, and DuckDNS |
+| **Smart host detection** | Nabu Casa (`.ui.nabu.casa`) and DuckDNS (`.duckdns.org`) automatically use HTTPS on port 443 |
+| **Live entity mirroring** | Remote states appear on the central instance and stay in sync over WebSocket |
+| **Service-call forwarding** | Control lights, switches, covers, automations, and more on the remote from the central HA |
+| **Automation control** | List, trigger, fetch, and update automation configs on the remote instance |
+| **Areas & labels** | Automatic Area and Label creation per property |
+| **Rental presets** | Check-in / check-out script and scene services for guest turnover |
+| **Maintenance windows** | Time-boxed access with optional consent gate (multi-tenant ready) |
+| **Health sensors** | Connection status, mirrored entity count, last seen, maintenance state |
 
 ---
 
-## How It Works: UI Walkthrough
+## Installation
 
-Manage your portfolio using Home Assistant’s built-in UI flow under **Settings → Devices & Services → Portfolio Tracker → Configure**.
+### HACS (recommended)
 
-### 1. Integration Dashboard & Overview
-Once installed, Portfolio Tracker aggregates all sensors, binary sensors, controls, and calendars into a single unified Home Assistant device.
+1. Install [HACS](https://hacs.xyz/) if you don’t already have it.
+2. Go to **HACS → Integrations → ⋮ → Custom repositories**.
+3. Add:
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/saboaua/Stock-Portfolio-Tracker/main/brand/integration_setup.png" alt="Integration Setup Card" width="380">
-  <br>
-  <img src="https://raw.githubusercontent.com/saboaua/Stock-Portfolio-Tracker/main/brand/integration_screen.png" alt="Integration Devices Screen" width="700">
-</p>
+   ```text
+   https://github.com/saboaua/Property-Bridge
+   ```
 
----
+   Category: **Integration**
+4. Click **Download**, then **restart Home Assistant**.
+5. Go to **Settings → Devices & Services → Add Integration** and search for **Property Bridge**.
 
-### 2. Management Hub
-Clicking **Configure** opens the main action menu where you can manage positions or adjust global configuration settings.
+### Manual
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/saboaua/Stock-Portfolio-Tracker/main/brand/manage_portfolio_menu.png" alt="Manage Portfolio Menu" width="450">
-</p>
+Copy `custom_components/property_bridge` into your Home Assistant `custom_components` directory and restart.
 
 ---
 
-### 3. Adding & Managing Holdings
+## Configuration
 
-* **Add a New Stock / ETF / Crypto:** Search by Yahoo Finance ticker (e.g., `NVDA`, `VUAA.L`, `BTC-USD`), enter shares/units, total cost basis, and purchase date.
-* **Buy / Sell / Edit / Remove:** Adjust position sizes or log sells to calculate realized P/L automatically.
+1. On each **remote** Home Assistant, create a **Long-Lived Access Token**  
+   (*Profile → Security → Long-Lived Access Tokens*).
+2. On the **central** Home Assistant, add the **Property Bridge** integration.
+3. Fill in:
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/saboaua/Stock-Portfolio-Tracker/main/brand/add_holding.png" alt="Add Holding Modal" width="420">
-</p>
+   | Field | Example / notes |
+   |-------|-----------------|
+   | **Property name** | `Aruba Ocean View` |
+   | **Host** | Local IP, Tailscale name, `xxxx.ui.nabu.casa`, or `myhouse.duckdns.org` (full URLs accepted) |
+   | **Port** | `8123` for local/Tailscale; cloud hosts auto-switch to **443** |
+   | **Access token** | Long-lived token from the *remote* instance |
+   | **Prefixes** | Optional entity / friendly-name prefixes |
+   | **Area / Label** | Toggle automatic creation |
 
-<table align="center">
-  <tr>
-    <td align="center"><b>Buy More Shares</b></td>
-    <td align="center"><b>Sell Shares</b></td>
-  </tr>
-  <tr>
-    <td><img src="https://raw.githubusercontent.com/saboaua/Stock-Portfolio-Tracker/main/brand/buy_stock.png" width="340"></td>
-    <td><img src="https://raw.githubusercontent.com/saboaua/Stock-Portfolio-Tracker/main/brand/sell_stock.png" width="340"></td>
-  </tr>
-  <tr>
-    <td align="center"><b>Edit Shares / Cost Basis</b></td>
-    <td align="center"><b>Remove Stock</b></td>
-  </tr>
-  <tr>
-    <td><img src="https://raw.githubusercontent.com/saboaua/Stock-Portfolio-Tracker/main/brand/edit_stock.png" width="340"></td>
-    <td><img src="https://raw.githubusercontent.com/saboaua/Stock-Portfolio-Tracker/main/brand/remove_stock.png" width="340"></td>
-  </tr>
-</table>
+### Options (per property)
 
----
+After adding a property, open **Configure** on the integration entry:
 
-### 4. Global Settings & Schedule
-Customize base currency, poll schedules during market hours, custom refresh intervals, and optional fixed daily snapshot times (09:35, 12:00, 16:05 local time).
-
-<p align="center">
-  <img src="https://raw.githubusercontent.com/saboaua/Stock-Portfolio-Tracker/main/brand/component_settings.png" alt="Component Settings" width="450">
-</p>
+| Option | Purpose |
+|--------|---------|
+| Create Area / Label | Auto-create Area and Label named after the property |
+| Check-in script / scene | Entity IDs used by `apply_checkin_preset` |
+| Check-out script / scene | Entity IDs used by `apply_checkout_preset` |
+| Maintenance enabled | Enable maintenance-window feature |
+| Require consent | Block opening a window until consent is granted |
+| Default window hours | Duration when requesting a maintenance window |
 
 ---
 
-### 5. Retirement Forecast Planning
-Configure compound-growth projections (4–10 years) using customizable baseline values, annual contributions, and benchmark scenarios (e.g., Nasdaq 15%) to automatically generate retirement sensors for your dashboards.
+## Services
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/saboaua/Stock-Portfolio-Tracker/main/brand/retirement_setting.png" alt="Retirement Forecast Settings" width="450">
-</p>
+All services need the property **entry_id** (device page or **Settings → Devices & Services → Property Bridge**).
 
----
+### Rental & maintenance
 
+| Service | Description |
+|---------|-------------|
+| `property_bridge.apply_checkin_preset` | Run check-in script and/or scene |
+| `property_bridge.apply_checkout_preset` | Run check-out script and/or scene |
+| `property_bridge.grant_maintenance_consent` | Grant maintenance consent |
+| `property_bridge.request_maintenance_window` | Open a time-limited maintenance window |
+| `property_bridge.end_maintenance_window` | Close window and revoke consent |
 
----
+### Remote control & automations
 
-## Event Triggers
+| Service | Description |
+|---------|-------------|
+| `property_bridge.call_remote_service` | Call any service on the remote HA |
+| `property_bridge.trigger_automation` | Trigger a mirrored remote automation |
+| `property_bridge.list_automations` | List mirrored automations (response data) |
+| `property_bridge.get_automation_config` | Fetch full automation config from remote |
+| `property_bridge.update_automation_config` | Create/update automation config on remote |
 
-Portfolio Tracker fires **native Home Assistant events** after each successful price update so you can drive notifications and automations without polling sensors.
+### Controlling mirrored devices
 
-<p align="center">
-  <img src="https://raw.githubusercontent.com/saboaua/Stock-Portfolio-Tracker/main/brand/event_triggers.png" alt="Event Trigger Settings" width="450">
-</p>
-
-Configure under **Configure → Event triggers**:
-
-| Setting | Default | Meaning |
-| :--- | :--- | :--- |
-| Enable event triggers | On | Master switch |
-| Milestone step | `10000` | Fire when total portfolio value crosses multiples of this amount (base currency) |
-| Volatility threshold | `5` | Fire when portfolio or any holding day-change % exceeds this absolute value |
-
-### Event types
-
-| Event | When it fires |
-| :--- | :--- |
-| `portfolio_tracker_milestone` | Total value crosses a milestone step **up** or **down** (debounced per level) |
-| `portfolio_tracker_volatility_alert` | Portfolio day % **or** any symbol’s day % exceeds the threshold (debounced until the move cools off) |
-
-### Example automation (milestone)
+When connected, service calls on the **central** HA that target a mirrored entity (light, switch, automation, cover, …) are **automatically forwarded** to the remote instance.
 
 ```yaml
-alias: Portfolio milestone notification
-trigger:
-  - platform: event
-    event_type: portfolio_tracker_milestone
-action:
-  - service: notify.mobile_app_your_phone
-    data:
-      title: Portfolio milestone
-      message: >
-        Moved {{ trigger.event.data.direction }} past
-        {{ trigger.event.data.threshold }} {{ trigger.event.data.currency }}
-        (now {{ trigger.event.data.total_value }}).
+# Trigger a remote automation
+service: property_bridge.trigger_automation
+data:
+  entry_id: YOUR_ENTRY_ID
+  entity_id: automation.guest_arrival
+
+# Get full config (use automation unique id from attributes → id)
+service: property_bridge.get_automation_config
+data:
+  entry_id: YOUR_ENTRY_ID
+  automation_id: guest_arrival
+
+# Push an updated config to the remote
+service: property_bridge.update_automation_config
+data:
+  entry_id: YOUR_ENTRY_ID
+  automation_id: guest_arrival
+  config:
+    alias: Guest arrival
+    trigger:
+      - platform: state
+        entity_id: binary_sensor.front_door
+        to: "on"
+    action:
+      - service: light.turn_on
+        target:
+          entity_id: light.entry
 ```
 
-### Example automation (volatility)
+> **Note:** Home Assistant’s built-in automation editor only edits *local* automations. For remote ones, use the services above, or enable/disable/trigger mirrored automation entities on the central instance.
+
+### Example: calendar check-in
 
 ```yaml
-alias: Portfolio volatility alert
-trigger:
-  - platform: event
-    event_type: portfolio_tracker_volatility_alert
-action:
-  - service: notify.mobile_app_your_phone
-    data:
-      title: Portfolio volatility
-      message: >
-        {% if trigger.event.data.scope == 'symbol' %}
-        {{ trigger.event.data.symbol }} moved {{ trigger.event.data.day_change_pct }}% today.
-        {% else %}
-        Portfolio day change {{ trigger.event.data.day_change_pct }}%.
-        {% endif %}
-```
-
-More examples: [`dashboards/event_automations.yaml`](./dashboards/event_automations.yaml).
-
-## Entity Reference
-
-| Entity | Description / Attributes |
-| :--- | :--- |
-| `sensor.<symbol>_price` | Current market price, 52-week highs/lows, volume |
-| `sensor.<symbol>_position_value` | Market value, shares held, total unrealized gain, weight % |
-| `sensor.portfolio_total_value` | Aggregate portfolio value in base currency |
-| `sensor.portfolio_total_invested` | Total cost basis across open positions |
-| `sensor.portfolio_total_gain` | Total unrealized gain/loss ($ and %) |
-| `sensor.portfolio_day_change` | Combined day change ($ and %) |
-| `sensor.portfolio_realized_gain` | Realized profit/loss history |
-| `sensor.portfolio_holdings_table` | JSON table array formatted for dashboard views |
-| `sensor.portfolio_top_movers` | Ranked day movers for charts (`movers`, `symbols`, `day_change_pcts`) |
-| `sensor.portfolio_last_update` | Timestamp of last successful Yahoo sync |
-| `button.portfolio_refresh` | Trigger manual price updates |
-| `binary_sensor.us_market_open` / `eu_market_open` | Session active indicators |
-| `calendar.portfolio_dividends` | Scheduled ex-dividend dates and payouts |
-
----
-
-## Dashboard Card Setup
-
-1. Go to **Settings → Dashboards → ⋮ (Top Right) → Resources → Add Resource**
-2. Configure as follows:
-   * **URL:** `/portfolio_tracker_static/portfolio-tracker-card.js`
-   * **Resource Type:** `JavaScript Module`
-
-3. Add the card to your dashboard:
-
-```yaml
-type: custom:portfolio-tracker-card
-title: My Portfolio
-view: charts
-range: 1W
+automation:
+  - alias: "Property check-in preset"
+    trigger:
+      - platform: calendar
+        event: start
+        entity_id: calendar.airbnb_aruba_ocean_view
+    action:
+      - service: property_bridge.apply_checkin_preset
+        data:
+          entry_id: "YOUR_CONFIG_ENTRY_ID"
 ```
 
 ---
 
-## Top Movers
+## Sensors (per property)
 
-Ranks your open holdings by **day change %** (gainers on the left, losers on the right).
+| Entity | Description |
+|--------|-------------|
+| **Connection Status** | Connected / Disconnected |
+| **Mirrored Entities** | Count of remote entities currently mirrored |
+| **Maintenance Until** | When the current maintenance window ends |
+| **Maintenance Allowed** | On while a valid window is open |
+| **Maintenance Consent** | On when consent has been granted |
 
-| Item | Detail |
-| :--- | :--- |
-| **Sensor** | `sensor.portfolio_top_movers` |
-| **State** | Symbol with the largest absolute day move |
-| **Attributes** | `movers`, `symbols`, `day_change_pcts`, `top_gainer`, `top_loser` |
+Connection Status also exposes attributes such as `ws_url`, `last_error`, `host`, `port`, and `remote_version` for troubleshooting.
 
-**Requirement:** [button-card](https://github.com/custom-cards/button-card) (HACS → Frontend).
+---
 
-### Card YAML (broker-style bars)
+## Recommended network setup
 
-Add a **Manual** card and paste:
-
-```yaml
-type: custom:button-card
-entity: sensor.portfolio_top_movers
-show_name: false
-show_icon: false
-show_state: false
-show_label: true
-tap_action:
-  action: more-info
-styles:
-  card:
-    - background: '#1a1d23'
-    - border-radius: 16px
-    - border: 1px solid rgba(255,255,255,0.06)
-    - box-shadow: none
-    - padding: 16px 18px 20px 18px
-  grid:
-    - grid-template-areas: '"l"'
-    - grid-template-columns: 1fr
-  label:
-    - justify-self: stretch
-label: |
-  [[[
-    const s = entity;
-    const movers = (s && s.attributes && s.attributes.movers) || [];
-    if (!movers.length) {
-      return `<div style="color:#94a3b8;font-size:13px;">No holdings yet</div>`;
-    }
-    const pcts = movers.map(m => Number(m.day_change_pct) || 0);
-    const maxAbs = Math.max(0.5, ...pcts.map(p => Math.abs(p)));
-    const bars = movers.map(m => {
-      const pct = Number(m.day_change_pct) || 0;
-      const h = Math.max(4, Math.round((Math.abs(pct) / maxAbs) * 72));
-      const up = pct >= 0;
-      const color = up ? '#26a69a' : '#ef5350';
-      const label = (up && pct > 0 ? '+' : '') + pct.toFixed(1) + '%';
-      return `
-        <div style="display:flex;flex-direction:column;align-items:center;justify-content:flex-end;flex:1;min-width:0;gap:6px;">
-          <div style="font-size:12px;font-weight:700;color:${color};white-space:nowrap;">${label}</div>
-          <div style="width:18px;height:80px;display:flex;align-items:flex-end;justify-content:center;">
-            <div style="width:14px;height:${h}px;background:${color};border-radius:3px;"></div>
-          </div>
-          <div style="font-size:12px;font-weight:700;color:#e2e8f0;letter-spacing:0.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;">${m.symbol}</div>
-        </div>`;
-    }).join('');
-    return `
-      <div style="width:100%;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
-          <div style="font-size:12px;font-weight:700;letter-spacing:0.14em;color:#94a3b8;">YOUR TOP MOVERS</div>
-          <div style="opacity:0.45;font-size:16px;color:#94a3b8;">☰</div>
-        </div>
-        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:8px;min-height:130px;border-top:1px dashed rgba(148,163,184,0.2);border-bottom:1px dashed rgba(148,163,184,0.2);padding:10px 4px 8px 4px;background:repeating-linear-gradient(to bottom, transparent, transparent 24px, rgba(148,163,184,0.12) 24px, rgba(148,163,184,0.12) 25px);">
-          ${bars}
-        </div>
-      </div>`;
-  ]]]
-grid_options:
-  columns: full
-```
-
-Optional ApexCharts variant: [`dashboards/top_movers.yaml`](./dashboards/top_movers.yaml).
+- Install [Tailscale](https://tailscale.com/) (or Headscale) on every Home Assistant instance.
+- Use the Tailscale hostname as `host` — works behind CGNAT with no open ports.
+- Apply ACLs so only the central management instance (and authorized users) can reach property instances.
+- Nabu Casa and DuckDNS remote access are supported out of the box.
 
 ---
 
 ## Roadmap
 
-**Income Insights** (planned):
+- [x] HACS-compatible structure & config flow
+- [x] Connection status sensors
+- [x] Automatic area / label assignment per property
+- [x] Rental calendar helpers (check-in / check-out presets)
+- [x] Maintenance windows / consent
+- [x] Live WebSocket entity mirroring
+- [x] Service-call forwarding to remote
+- [x] Automation list / trigger / get / update config
+- [ ] Include / exclude domain & entity filters in options UI
+- [ ] Bulk health dashboard card
+- [ ] Deeper calendar integration (auto entry_id lookup)
 
-- 🚀 **Dividend Income Tracking** — `sensor.portfolio_tracker_projected_dividend_income`, calculating total projected annual passive payout.
-- ⚙️ Enhanced Long-Term Statistics (LTS) compliance across all portfolio sensors (`MONETARY` device class + integer precision defaults).
-- ⚙️ Replace the `--` placeholders in the holdings table view with a dynamic dividend yield per asset.
+---
 
-**Shipped in 1.5.8:** Event triggers (`portfolio_tracker_milestone`, `portfolio_tracker_volatility_alert`) — see [Event Triggers](#event-triggers).
+## Development
 
-**Shipped in 1.5.9:** Top Movers (`sensor.portfolio_top_movers`) + day-change baseline fix — see [Top Movers](#top-movers) and [CHANGELOG.md](./CHANGELOG.md).
+```bash
+git clone https://github.com/saboaua/Property-Bridge.git
+```
+
+```text
+custom_components/property_bridge/
+├── __init__.py
+├── config_flow.py
+├── connection.py
+├── const.py
+├── helpers.py
+├── manifest.json
+├── sensor.py
+├── binary_sensor.py
+├── services.py
+├── services.yaml
+├── strings.json
+└── translations/
+```
+
+---
+
+## Credits
+
+Inspired by the community component [remote_homeassistant](https://github.com/custom-components/remote_homeassistant).  
+Built for people managing smart vacation rentals and multi-property portfolios with Home Assistant.
+
+---
+
+## License
+
+[MIT](LICENSE) — free to use, modify, and distribute.

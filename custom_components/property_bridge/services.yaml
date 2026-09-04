@@ -1,0 +1,161 @@
+apply_checkin_preset:
+  name: Apply check-in preset
+  description: Run the configured check-in script and/or scene for a property.
+  fields:
+    entry_id:
+      name: Property entry ID
+      description: Config entry ID of the Property Bridge property (from the device or integration page).
+      required: true
+      selector:
+        text:
+
+apply_checkout_preset:
+  name: Apply check-out preset
+  description: Run the configured check-out script and/or scene for a property.
+  fields:
+    entry_id:
+      name: Property entry ID
+      description: Config entry ID of the Property Bridge property.
+      required: true
+      selector:
+        text:
+
+request_maintenance_window:
+  name: Request maintenance window
+  description: Open a time-limited maintenance window for a property (respects consent setting).
+  fields:
+    entry_id:
+      name: Property entry ID
+      description: Config entry ID of the Property Bridge property.
+      required: true
+      selector:
+        text:
+    hours:
+      name: Duration (hours)
+      description: How long the maintenance window should stay open. Defaults to the value configured in options.
+      required: false
+      selector:
+        number:
+          min: 1
+          max: 168
+          unit_of_measurement: hours
+
+end_maintenance_window:
+  name: End maintenance window
+  description: Close the maintenance window and revoke consent for a property.
+  fields:
+    entry_id:
+      name: Property entry ID
+      description: Config entry ID of the Property Bridge property.
+      required: true
+      selector:
+        text:
+
+grant_maintenance_consent:
+  name: Grant maintenance consent
+  description: Grant consent so a maintenance window can be opened (multi-tenant safety).
+  fields:
+    entry_id:
+      name: Property entry ID
+      description: Config entry ID of the Property Bridge property.
+      required: true
+      selector:
+        text:
+
+call_remote_service:
+  name: Call remote service
+  description: Call any service on the remote Home Assistant for this property.
+  fields:
+    entry_id:
+      name: Property entry ID
+      required: true
+      selector:
+        text:
+    domain:
+      name: Domain
+      description: Service domain (e.g. light, automation, switch).
+      required: true
+      selector:
+        text:
+    service:
+      name: Service
+      description: Service name (e.g. turn_on, trigger).
+      required: true
+      selector:
+        text:
+    service_data:
+      name: Service data
+      description: Optional JSON data for the service call.
+      required: false
+      selector:
+        object:
+
+trigger_automation:
+  name: Trigger automation
+  description: Trigger a mirrored remote automation from the central instance.
+  fields:
+    entry_id:
+      name: Property entry ID
+      required: true
+      selector:
+        text:
+    entity_id:
+      name: Automation entity
+      description: Local or remote automation entity_id.
+      required: true
+      selector:
+        entity:
+          domain: automation
+    skip_condition:
+      name: Skip conditions
+      required: false
+      selector:
+        boolean:
+
+list_automations:
+  name: List automations
+  description: List all mirrored automations for a property (returns response data).
+  fields:
+    entry_id:
+      name: Property entry ID
+      required: true
+      selector:
+        text:
+
+get_automation_config:
+  name: Get automation config
+  description: Fetch the full automation YAML/config from the remote instance.
+  fields:
+    entry_id:
+      name: Property entry ID
+      required: true
+      selector:
+        text:
+    automation_id:
+      name: Automation ID
+      description: Unique automation id (attribute "id"), not only entity_id.
+      required: true
+      selector:
+        text:
+
+update_automation_config:
+  name: Update automation config
+  description: Create or update an automation on the remote instance (full config object).
+  fields:
+    entry_id:
+      name: Property entry ID
+      required: true
+      selector:
+        text:
+    automation_id:
+      name: Automation ID
+      description: Unique automation id to create or update.
+      required: true
+      selector:
+        text:
+    config:
+      name: Config
+      description: Full automation config (alias, triggers, conditions, actions, mode…).
+      required: true
+      selector:
+        object:

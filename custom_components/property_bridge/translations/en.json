@@ -1,0 +1,74 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add Remote Property",
+        "description": "Connect a remote Home Assistant instance (one rental property) to this central Property Bridge portal.\n\nYou can use a local IP, Tailscale hostname, Nabu Casa (e.g. abcd1234.ui.nabu.casa), or DuckDNS (e.g. myhouse.duckdns.org).",
+        "data": {
+          "property_name": "Property name",
+          "host": "Host / IP / Tailscale / Nabu Casa / DuckDNS",
+          "port": "Port (leave 8123 for local; 443 is used automatically for Nabu Casa & DuckDNS)",
+          "access_token": "Long-lived access token",
+          "secure": "Use HTTPS / WSS (secure)",
+          "verify_ssl": "Verify SSL certificate",
+          "entity_prefix": "Entity ID prefix (e.g. aruba01_)",
+          "friendly_name_prefix": "Friendly name prefix (e.g. Aruba 01 )",
+          "create_area": "Automatically create Area for this property",
+          "create_label": "Automatically create Label for this property"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Unable to connect to the remote Home Assistant. Check host, port, token and network. For Nabu Casa / DuckDNS use the hostname only (e.g. abcd1234.ui.nabu.casa or myhouse.duckdns.org) and leave Secure ON.",
+      "invalid_ssl": "SSL certificate problem. Try turning off 'Verify SSL certificate' for self-signed certificates, or make sure you are using the correct HTTPS URL.",
+      "unknown": "Unexpected error occurred."
+    },
+    "abort": {
+      "already_configured": "This property / host combination is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Property Bridge Options",
+        "data": {
+          "entity_prefix": "Entity ID prefix",
+          "friendly_name_prefix": "Friendly name prefix",
+          "secure": "Use HTTPS / WSS",
+          "verify_ssl": "Verify SSL certificate",
+          "create_area": "Create / keep Area for this property",
+          "create_label": "Create / keep Label for this property",
+          "checkin_script": "Check-in script entity_id (optional)",
+          "checkout_script": "Check-out script entity_id (optional)",
+          "checkin_scene": "Check-in scene entity_id (optional)",
+          "checkout_scene": "Check-out scene entity_id (optional)",
+          "maintenance_enabled": "Enable maintenance window feature",
+          "maintenance_require_consent": "Require consent before opening maintenance window",
+          "maintenance_window_hours": "Default maintenance window duration (hours)"
+        }
+      }
+    }
+  },
+  "services": {
+    "apply_checkin_preset": {
+      "name": "Apply check-in preset",
+      "description": "Run the configured check-in script and/or scene for a property."
+    },
+    "apply_checkout_preset": {
+      "name": "Apply check-out preset",
+      "description": "Run the configured check-out script and/or scene for a property."
+    },
+    "request_maintenance_window": {
+      "name": "Request maintenance window",
+      "description": "Open a time-limited maintenance window for a property."
+    },
+    "end_maintenance_window": {
+      "name": "End maintenance window",
+      "description": "Close the maintenance window and revoke consent."
+    },
+    "grant_maintenance_consent": {
+      "name": "Grant maintenance consent",
+      "description": "Grant consent so a maintenance window can be opened."
+    }
+  }
+}
